@@ -20,7 +20,7 @@
 </head>
 <body>
 <div class="app-shell">
-<header class="topbar"><div class="brand"><img class="brand-mark" src="icons/icon.svg" alt="" width="36" height="36"><div><small>TRAINING SYSTEM</small><h1>Gym Tracker</h1></div></div><button id="install" class="icon-btn hidden" aria-label="Install app">↓</button></header>
+<header class="topbar"><div class="brand"><img class="brand-mark" src="icons/icon.svg" alt="" width="36" height="36"><div><small>TRAINING SYSTEM</small><h1>Gym Tracker</h1></div></div><button id="install" class="icon-btn hidden" aria-label="Install app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 19h14"/></svg></button></header>
 <main>
 <section id="workout" class="view active"></section>
 <section id="program" class="view"></section>
@@ -28,9 +28,15 @@
 <section id="history" class="view"></section>
 <section id="settings" class="view"></section>
 </main>
-<nav class="bottom-nav" aria-label="Main navigation"><button data-v="workout" class="active"><span>⌂</span><small>Today</small></button><button data-v="program"><span>▤</span><small>Program</small></button><button data-v="progress"><span>↗</span><small>Progress</small></button><button data-v="history"><span>◷</span><small>History</small></button><button data-v="settings"><span>•••</span><small>More</small></button></nav>
+<nav class="bottom-nav" aria-label="Main navigation">
+<button data-v="workout" class="active"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></span><small>Today</small></button>
+<button data-v="program"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3v3h6V3"/><path d="M8 12h8M8 16h5"/></svg></span><small>Program</small></button>
+<button data-v="progress"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><small>Progress</small></button>
+<button data-v="history"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span><small>History</small></button>
+<button data-v="settings"><span><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></span><small>More</small></button>
+</nav>
 </div>
-<div id="modal" class="hidden"><div id="modalbox"><button id="close" class="modal-close">×</button><div id="modalbody"></div></div></div>
+<div id="modal" class="hidden"><div id="modalbox"><button id="close" class="modal-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="modalbody"></div></div></div>
 <div id="toast" role="status"></div>
 <script src="js/app.js"></script>
 <script src="js/v43.js"></script>
