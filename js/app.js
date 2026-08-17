@@ -9,10 +9,12 @@ const BUILTIN_DAYS=[
 ["DAY 7 — REST","Recovery",[]]];
 const K='gymTrackerV43';
 let S=JSON.parse(localStorage.getItem(K)||'null')||JSON.parse(localStorage.getItem('gymTrackerV3')||localStorage.getItem('gymTrackerV2')||localStorage.getItem('gymTrackerV1')||'null')||{day:0,workouts:[],metrics:[],active:null};
-S.workouts=S.workouts||[];S.metrics=S.metrics||[];S.active=S.active||null;S.day=S.day??0;S.programs=S.programs||[];S.activeProgram=S.activeProgram||'builtin';
+S.workouts=S.workouts||[];S.metrics=S.metrics||[];S.active=S.active||null;S.day=S.day??0;S.programs=S.programs||[];S.activeProgram=S.activeProgram||'builtin';S.volumeGoals=S.volumeGoals||{};
 function activeProgramObj(){return S.activeProgram==='builtin'?null:(S.programs||[]).find(p=>p.id===S.activeProgram)}
 function activeProgramName(){return activeProgramObj()?.name||BUILTIN_NAME}
 function activeDays(){const p=activeProgramObj();const days=p?p.days:BUILTIN_DAYS;if(S.day>=days.length)S.day=0;return days}
+function exerciseTagFor(name){const pools=[BUILTIN_DAYS,...(S.programs||[]).map(p=>p.days)];for(const days of pools){const found=days.flatMap(d=>d[2]).find(e=>e[0]===name);if(found)return found[3].replace(/ #\d+$/,'')}return'Other'}
+function actualWeeklySets(){const cutoff=new Date();cutoff.setDate(cutoff.getDate()-6);const cutoffStr=cutoff.toISOString().slice(0,10);const totals={};S.workouts.forEach(w=>{if(w.date<cutoffStr)return;(w.entries||[]).forEach(e=>{const tag=exerciseTagFor(e.exercise);totals[tag]=(totals[tag]||0)+(e.sets?.length||0)})});return totals}
 const save=()=>localStorage.setItem(K,JSON.stringify(S));
 const today=()=>new Date().toISOString().slice(0,10);
 const esc=x=>String(x??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\\':'&#92;'}[m]));
