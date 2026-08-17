@@ -15,7 +15,7 @@ function activeProgramName(){return activeProgramObj()?.name||BUILTIN_NAME}
 function activeDays(){const p=activeProgramObj();const days=p?p.days:BUILTIN_DAYS;if(S.day>=days.length)S.day=0;return days}
 function exerciseTagFor(name){const pools=[BUILTIN_DAYS,...(S.programs||[]).map(p=>p.days)];for(const days of pools){const found=days.flatMap(d=>d[2]).find(e=>e[0]===name);if(found)return found[3].replace(/ #\d+$/,'')}return'Other'}
 function actualWeeklySets(){const cutoff=new Date();cutoff.setDate(cutoff.getDate()-6);const cutoffStr=cutoff.toISOString().slice(0,10);const totals={};S.workouts.forEach(w=>{if(w.date<cutoffStr)return;(w.entries||[]).forEach(e=>{const tag=exerciseTagFor(e.exercise);totals[tag]=(totals[tag]||0)+(e.sets?.length||0)})});return totals}
-const save=()=>localStorage.setItem(K,JSON.stringify(S));
+const save=()=>{localStorage.setItem(K,JSON.stringify(S));window.onDataChanged?.()};
 const today=()=>new Date().toISOString().slice(0,10);
 const esc=x=>String(x??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\\':'&#92;'}[m]));
 const parseRange=s=>{let m=s.match(/(\d+)\s*×\s*(\d+)\s*[–-]\s*(\d+)/);return m?{sets:+m[1],min:+m[2],max:+m[3]}:{sets:parseInt(s)||1,min:1,max:99}};
