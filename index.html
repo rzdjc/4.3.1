@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070809">
+<meta name="description" content="Offline-first hypertrophy training tracker with progression intelligence.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym Tracker">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/v43.css">
+<link rel="stylesheet" href="css/v5.css">
+<title>Gym Tracker</title>
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar"><div class="brand"><img class="brand-mark" src="icons/icon.svg" alt="" width="36" height="36"><div><small>TRAINING SYSTEM</small><h1>Gym Tracker</h1></div></div><button id="install" class="icon-btn hidden" aria-label="Install app">↓</button></header>
+<main>
+<section id="workout" class="view active"></section>
+<section id="program" class="view"></section>
+<section id="progress" class="view"></section>
+<section id="history" class="view"></section>
+<section id="settings" class="view"></section>
+</main>
+<nav class="bottom-nav" aria-label="Main navigation"><button data-v="workout" class="active"><span>⌂</span><small>Today</small></button><button data-v="program"><span>▤</span><small>Program</small></button><button data-v="progress"><span>↗</span><small>Progress</small></button><button data-v="history"><span>◷</span><small>History</small></button><button data-v="settings"><span>•••</span><small>More</small></button></nav>
+</div>
+<div id="modal" class="hidden"><div id="modalbox"><button id="close" class="modal-close">×</button><div id="modalbody"></div></div></div>
+<div id="toast" role="status"></div>
+<script src="js/app.js"></script>
+<script src="js/v43.js"></script>
+</body></html>
