@@ -106,7 +106,7 @@ function rd_selectProgram(id){
 
 /* ---------- Progress ---------- */
 function rd_progress(){
- window.__rdProgressTab=window.__rdProgressTab||'Exercises';
+ window.__rdProgressTab=window.__rdProgressTab||'Measures';
  const weekSets=rd_weekTotalSets(),prevSets=rd_prevWeekTotalSets(),goalSets=rd_weekGoalSetsSum();
  const delta=prevSets?Math.round((weekSets-prevSets)/prevSets*100):null;
  const goalPct=goalSets>0?weekSets/goalSets:null;
@@ -125,10 +125,17 @@ function rd_progress(){
   const names=[...new Set(activeDays().flatMap(d=>d[2]).map(e=>e[0]))];
   const lastW=S.workouts[S.workouts.length-1];
   if(!names.length)h+='<div style="padding:24px 2px;color:var(--stone-500);font-size:13px">No exercises in your active program.</div>';
-  names.forEach(n=>{
-   const best=rd_bestWeight(n);
-   const isPr=!!lastW&&(lastW.entries||[]).some(e=>e.exercise===n&&e.pr);
-   h+=`<div style="display:flex;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--border-hairline)"><div style="flex:1;font-family:'Barlow Semi Condensed',sans-serif;font-size:16px;font-weight:600">${esc(n)}</div>${isPr?'<span class="rd-badge rd-badge-success">New PR</span>':''}<span style="font-family:'Barlow Semi Condensed',sans-serif;font-size:16px;font-weight:600">${best?rd_kg(best)+' '+rd_unitLabel():'—'}</span></div>`;
+  const byTag={};
+  names.forEach(n=>{const tag=exerciseTagFor(n);(byTag[tag]=byTag[tag]||[]).push(n)});
+  const tags=Object.keys(byTag).sort((a,b)=>byTag[b].length-byTag[a].length||a.localeCompare(b));
+  tags.forEach((tag,ti)=>{
+   h+=`<details class="rd-muscle-group" ${ti===0?'open':''}><summary><span>${esc(tag)}</span><span class="count">${byTag[tag].length} exercise${byTag[tag].length===1?'':'s'}</span></summary>`;
+   byTag[tag].forEach(n=>{
+    const best=rd_bestWeight(n);
+    const isPr=!!lastW&&(lastW.entries||[]).some(e=>e.exercise===n&&e.pr);
+    h+=`<div class="rd-ex-row"><span class="rd-ex-name">${esc(n)}</span>${isPr?'<span class="rd-badge rd-badge-success">New PR</span>':''}<span class="rd-ex-best">${best?rd_kg(best)+' '+rd_unitLabel():'—'}</span></div>`;
+   });
+   h+='</details>';
   });
  } else {
   const m=S.metrics,last=m[m.length-1]||{},prev=m[m.length-2]||{};
@@ -158,7 +165,7 @@ function rd_muscleGoalRows(){
   const sets=actual[t]||0,goal=goals[t],prev=prevActual[t]||0,met=!!goal&&sets>=goal;
   const pct=goal?Math.min(100,Math.round(sets/goal*100)):Math.round(sets/maxSets*100);
   const delta=sets-prev;
-  return `<button class="rd-muscle-row" data-goal-tag2="${esc(t)}"><div class="rd-muscle-row-top"><span class="rd-muscle-name">${esc(t)}</span><span class="rd-muscle-count">${sets}${goal?`<b> / ${goal}</b>`:''} sets${delta!==0?`<em class="${delta>0?'up':'down'}">${delta>0?'+':''}${delta} vs last wk</em>`:''}${met?' <span class="rd-badge rd-badge-success" style="margin-left:4px">✓</span>':''}</span></div><div class="rd-progress-track" style="height:5px"><div class="rd-progress-fill${met?' met':''}" style="width:${pct}%"></div></div></button>`;
+  return `<button class="rd-muscle-row" data-goal-tag2="${esc(t)}"><div class="rd-muscle-row-top"><span class="rd-muscle-name">${esc(t)}</span><span class="rd-muscle-count">${sets}${goal?`<b> / ${goal}</b>`:''} sets${delta!==0?`<em class="${delta>0?'up':'down'}">${delta>0?'+':''}${delta} vs last wk</em>`:''}${met?' <span class="rd-badge rd-badge-success" style="margin-left:4px">✓</span>':''}${goal?'':'<span class="rd-goal-cta">+ Set goal</span>'}</span></div><div class="rd-progress-track" style="height:5px"><div class="rd-progress-fill${met?' met':''}" style="width:${pct}%"></div></div></button>`;
  }).join('')
 }
 function rd_openGoalEditor(tag){
@@ -264,7 +271,7 @@ function rd_openCheckin(){
 /* ---------- Program builder dialog ---------- */
 let rd_builder=null;
 function rd_newBuilderDay(){return {label:'',rest:false,exercises:[rd_newBuilderEx()]}}
-function rd_newBuilderEx(){return {name:'',sets:'3',min:'8',max:'12',tag:''}}
+function rd_newBuilderEx(){return {name:'',sets:'3',min:'8',max:'12',tag:MUSCLE_GROUPS[0]}}
 function rd_openBuilder(){rd_builder={name:'',days:[rd_newBuilderDay()]};rd_renderBuilder()}
 function rd_renderBuilder(){
  let h='<div class="rd-dialog-title">New split</div><div style="display:flex;flex-direction:column;gap:16px">';
@@ -275,7 +282,7 @@ function rd_renderBuilder(){
   h+=`<label class="rd-check-row"><input type="checkbox" data-b-rest="${di}" ${d.rest?'checked':''}> Rest day</label>`;
   if(!d.rest){
    d.exercises.forEach((ex,ei)=>{
-    h+=`<div class="rd-builder-ex"><div class="rd-builder-row"><input class="rd-input" data-b-exname="${di}-${ei}" value="${esc(ex.name)}" placeholder="Exercise name" style="flex:1"><button class="rd-iconbtn sm" data-b-rmex="${di}-${ei}" aria-label="Remove exercise"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div style="display:flex;gap:8px"><input class="rd-input" data-b-sets="${di}-${ei}" value="${ex.sets}" inputmode="numeric" placeholder="Sets"><input class="rd-input" data-b-reps="${di}-${ei}" value="${ex.min}" inputmode="numeric" placeholder="Reps"><input class="rd-input" data-b-tag="${di}-${ei}" value="${esc(ex.tag)}" placeholder="Tag"></div></div>`;
+    h+=`<div class="rd-builder-ex"><div class="rd-builder-row"><input class="rd-input" data-b-exname="${di}-${ei}" value="${esc(ex.name)}" placeholder="Exercise name" style="flex:1"><button class="rd-iconbtn sm" data-b-rmex="${di}-${ei}" aria-label="Remove exercise"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div style="display:flex;gap:8px"><input class="rd-input" data-b-sets="${di}-${ei}" value="${ex.sets}" inputmode="numeric" placeholder="Sets" style="width:56px"><input class="rd-input" data-b-reps="${di}-${ei}" value="${ex.min}" inputmode="numeric" placeholder="Reps" style="width:56px"><select class="rd-select" data-b-tag="${di}-${ei}">${MUSCLE_GROUPS.map(g=>`<option value="${esc(g)}" ${ex.tag===g?'selected':''}>${esc(g)}</option>`).join('')}</select></div></div>`;
    });
    h+=`<button class="rd-btn ghost sm" data-b-addex="${di}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add exercise</button>`;
   }
@@ -296,7 +303,7 @@ function rd_bindBuilder(){
  document.querySelectorAll('[data-b-exname]').forEach(i=>i.oninput=()=>{const[di,ei]=i.dataset.bExname.split('-').map(Number);rd_builder.days[di].exercises[ei].name=i.value});
  document.querySelectorAll('[data-b-sets]').forEach(i=>i.oninput=()=>{const[di,ei]=i.dataset.bSets.split('-').map(Number);rd_builder.days[di].exercises[ei].sets=i.value});
  document.querySelectorAll('[data-b-reps]').forEach(i=>i.oninput=()=>{const[di,ei]=i.dataset.bReps.split('-').map(Number);rd_builder.days[di].exercises[ei].min=i.value;rd_builder.days[di].exercises[ei].max=i.value});
- document.querySelectorAll('[data-b-tag]').forEach(i=>i.oninput=()=>{const[di,ei]=i.dataset.bTag.split('-').map(Number);rd_builder.days[di].exercises[ei].tag=i.value});
+ document.querySelectorAll('[data-b-tag]').forEach(i=>i.onchange=()=>{const[di,ei]=i.dataset.bTag.split('-').map(Number);rd_builder.days[di].exercises[ei].tag=i.value});
  document.querySelectorAll('[data-b-rmday]').forEach(b=>b.onclick=()=>{if(rd_builder.days.length>1){rd_builder.days.splice(+b.dataset.bRmday,1);rd_renderBuilder()}});
  document.querySelectorAll('[data-b-addex]').forEach(b=>b.onclick=()=>{const di=+b.dataset.bAddex;if(rd_builder.days[di].exercises.length<6){rd_builder.days[di].exercises.push(rd_newBuilderEx());rd_renderBuilder()}});
  document.querySelectorAll('[data-b-rmex]').forEach(b=>b.onclick=()=>{const[di,ei]=b.dataset.bRmex.split('-').map(Number);if(rd_builder.days[di].exercises.length>1){rd_builder.days[di].exercises.splice(ei,1);rd_renderBuilder()}});
