@@ -6,8 +6,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#121314",
-  "theme_color": "#121314",
+  "background_color": "#F4F2ED",
+  "theme_color": "#F4F2ED",
   "description": "Offline-first hypertrophy training tracker with progression intelligence.",
   "categories": ["health", "fitness", "lifestyle"],
   "icons": [

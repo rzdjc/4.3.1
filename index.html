@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#121314">
+<meta name="theme-color" content="#F4F2ED">
 <meta name="description" content="Offline-first hypertrophy training tracker with progression intelligence.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Gym Tracker">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="css/v43.css">
 <link rel="stylesheet" href="css/v5.css">
 <link rel="stylesheet" href="css/justin-theme.css">
+<link rel="stylesheet" href="css/redesign.css">
 <title>Gym Tracker</title>
 </head>
 <body>
@@ -30,11 +31,11 @@
 <section id="settings" class="view"></section>
 </main>
 <nav class="bottom-nav" aria-label="Main navigation">
-<button data-v="workout" class="active"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></span><small>Today</small></button>
-<button data-v="program"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 3v3h6V3"/><path d="M8 12h8M8 16h5"/></svg></span><small>Program</small></button>
+<button data-v="workout" class="active"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a6 6 0 11-12 0c0-1 .5-2 1-3 1.072-2.143 3-1 3 1z"/></svg></span><small>Today</small></button>
+<button data-v="program"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></span><small>Program</small></button>
 <button data-v="progress"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><small>Progress</small></button>
 <button data-v="history"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span><small>History</small></button>
-<button data-v="settings"><span><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></span><small>More</small></button>
+<button data-v="settings"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></svg></span><small>You</small></button>
 </nav>
 </div>
 <div id="modal" class="hidden"><div id="modalbox"><button id="close" class="modal-close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="modalbody"></div></div></div>
@@ -42,5 +43,6 @@
 <script src="js/vendor/supabase.min.js"></script>
 <script src="js/app.js"></script>
 <script src="js/v43.js"></script>
+<script src="js/redesign.js"></script>
 <script src="js/sync.js"></script>
 </body></html>
