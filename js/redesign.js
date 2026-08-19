@@ -2,7 +2,6 @@
    functions and adds a full-screen one-exercise-at-a-time live session. Reuses S/save/view/toast/activeDays/
    lastForExercise/exerciseTagFor/actualWeeklySets from app.js (shared global scope, classic scripts). */
 (function(){
-S.weeklyVolumeGoalKg=S.weeklyVolumeGoalKg||15000;
 S.units=S.units||'kg';
 S.restTimerAuto=S.restTimerAuto??true;
 S.weeklyEmail=S.weeklyEmail??false;
@@ -19,12 +18,15 @@ function rd_programList(){return [{id:'builtin',name:BUILTIN_NAME,days:BUILTIN_D
 
 function rd_weekCutoff(days){const c=new Date();c.setDate(c.getDate()-(days-1));return c.toISOString().slice(0,10)}
 function rd_weekWorkouts(){const cutoff=rd_weekCutoff(7);return S.workouts.filter(w=>w.date>=cutoff)}
-function rd_weekVolume(){return rd_weekWorkouts().reduce((a,w)=>a+(w.volume||0),0)}
 function rd_streak(){const dates=[...new Set(S.workouts.map(w=>w.date))].sort().reverse();if(!dates.length)return 0;const today0=new Date(today());const gap0=Math.round((today0-new Date(dates[0]))/86400000);if(gap0>2)return 0;let streak=1,cur=new Date(dates[0]);for(let i=1;i<dates.length;i++){const d=new Date(dates[i]);const diff=Math.round((cur-d)/86400000);if(diff<=2){streak++;cur=d}else break}return streak}
 function rd_weekTarget(){return activeDays().filter(d=>d[2].length).length}
 function rd_weekDone(){const dates=new Set(rd_weekWorkouts().map(w=>w.date));return Math.min(dates.size,rd_weekTarget())}
 
-function rd_volumeSeries(){const days=[];const now=new Date();for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10))}const byDate={};S.workouts.forEach(w=>{byDate[w.date]=(byDate[w.date]||0)+(w.volume||0)});const vals=days.map(d=>byDate[d]||0);const max=Math.max(...vals,1);const labels=['S','M','T','W','T','F','S'];return days.map((d,i)=>({h:Math.round((vals[i]/max)*104)||2,isToday:d===today(),label:new Date(d+'T00:00').getDay()===0?'S':'MTWTFS'[new Date(d+'T00:00').getDay()-1]||'S',v:vals[i]}))}
+function rd_setsCount(w){return (w.entries||[]).reduce((a,e)=>a+(e.sets?.length||0),0)}
+function rd_weekTotalSets(){return Object.values(actualWeeklySets()).reduce((a,v)=>a+v,0)}
+function rd_prevWeekTotalSets(){const start=rd_weekCutoff(14),end=rd_weekCutoff(7);let total=0;S.workouts.forEach(w=>{if(w.date>=start&&w.date<end)total+=rd_setsCount(w)});return total}
+function rd_weekGoalSetsSum(){return Object.values(S.volumeGoals||{}).reduce((a,v)=>a+v,0)}
+function rd_setsSeries(){const days=[];const now=new Date();for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10))}const byDate={};S.workouts.forEach(w=>{byDate[w.date]=(byDate[w.date]||0)+rd_setsCount(w)});const vals=days.map(d=>byDate[d]||0);const max=Math.max(...vals,1);return days.map((d,i)=>({h:Math.round((vals[i]/max)*104)||2,isToday:d===today(),label:new Date(d+'T00:00').getDay()===0?'S':'MTWTFS'[new Date(d+'T00:00').getDay()-1]||'S',v:vals[i]}))}
 
 function rd_toast(msg){toast(msg)}
 
@@ -42,14 +44,18 @@ function rd_today(){
   h+=`<div class="rd-rest-card rd-fade"><div class="rd-eyebrow">Recovery</div><h2 class="rd-h2">Rest today</h2><p>Keep activity easy and let the next session hit fresh. No workout scheduled.</p></div>`;
  }
  h+='<div style="padding:0 22px;display:flex;flex-direction:column;gap:20px">';
- const weekDone=rd_weekDone(),weekTotal=rd_weekTarget(),volKg=rd_weekVolume();
+ const weekDone=rd_weekDone(),weekTotal=rd_weekTarget(),weekSets=rd_weekTotalSets(),goalSets=rd_weekGoalSetsSum();
  h+=`<div class="rd-stat-grid rd-fade" style="animation-delay:.05s">
   <div class="rd-stat-tile"><span class="lbl">Streak</span><span class="val">${rd_streak()}<small>d</small></span></div>
   <div class="rd-stat-tile"><span class="lbl">This week</span><span class="val">${weekDone}<small>/ ${weekTotal}</small></span></div>
-  <div class="rd-stat-tile"><span class="lbl">Volume</span><span class="val">${(volKg/1000).toFixed(1)}<small>t</small></span></div>
+  <div class="rd-stat-tile"><span class="lbl">Sets</span><span class="val">${weekSets}</span></div>
  </div>`;
- const goalPct=Math.min(100,Math.round(volKg/S.weeklyVolumeGoalKg*100));
- h+=`<div class="rd-fade" style="animation-delay:.1s"><div class="rd-progress-row"><span class="rd-progress-label">Weekly volume goal</span><span class="rd-progress-caption">${volKg.toLocaleString()} / ${S.weeklyVolumeGoalKg.toLocaleString()} kg</span></div><div class="rd-progress-track"><div class="rd-progress-fill" style="width:${goalPct}%"></div></div></div>`;
+ if(goalSets>0){
+  const goalPct=Math.min(100,Math.round(weekSets/goalSets*100));
+  h+=`<div class="rd-fade" style="animation-delay:.1s"><div class="rd-progress-row"><span class="rd-progress-label">Weekly sets goal</span><span class="rd-progress-caption">${weekSets} / ${goalSets} sets</span></div><div class="rd-progress-track"><div class="rd-progress-fill" style="width:${goalPct}%"></div></div></div>`;
+ } else {
+  h+=`<div class="rd-fade" style="animation-delay:.1s"><div class="rd-progress-row"><span class="rd-progress-label">Weekly sets</span><span class="rd-progress-caption">${weekSets} sets</span></div><div style="font-size:11px;color:var(--stone-500)">Tap a muscle group on Progress to set a weekly goal.</div></div>`;
+ }
  if(day[2].length){
   h+=`<div class="rd-fade" style="animation-delay:.15s"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span class="rd-eyebrow" style="margin:0">Plan</span><span style="font-size:11px;color:var(--stone-500)">${esc(activeProgramName())}</span></div><div class="rd-card pad-0">`;
   day[2].forEach((ex,i)=>{
@@ -73,7 +79,7 @@ function rd_program(){
  rd_programList().forEach(p=>{h+=`<button class="rd-tag ${p.id===(S.activeProgram||'builtin')?'selected':''}" data-select-prog="${esc(p.id)}">${esc(p.name)}</button>`});
  h+='<button class="rd-tag" id="rdNewSplit">+ New split</button></div>';
  h+='<div class="rd-chip-row" style="margin-bottom:18px">';
- days.forEach((d,i)=>{h+=`<div class="rd-day-chip ${i===active?'active':''}" data-select-day="${i}"><b>${String(i+1).padStart(2,'0')}</b><span>${!d[2].length?'Rest':(d[0].split('—')[1]||d[0]).trim().split(' ')[0]}</span></div>`});
+ days.forEach((d,i)=>{h+=`<div class="rd-day-chip ${i===active?'active':''}" data-select-day="${i}"><b>${String(i+1).padStart(2,'0')}</b><span>${!d[2].length?'Rest':esc((d[0].split('—')[1]||d[0]).trim())}</span></div>`});
  h+='</div>';
  if(!day[2].length){
   h+=`<div class="rd-card"><div class="rd-eyebrow" style="margin-bottom:0">Day ${active+1}</div><h2 class="rd-h2">Recovery</h2><div style="font-size:13px;color:var(--stone-500);margin-top:10px;line-height:1.5">Keep activity easy — walking, mobility, sleep. You don't need to force a session.</div></div>`;
@@ -100,16 +106,16 @@ function rd_selectProgram(id){
 /* ---------- Progress ---------- */
 function rd_progress(){
  window.__rdProgressTab=window.__rdProgressTab||'Exercises';
- const volKg=rd_weekVolume(),recent=S.workouts.slice(-8),prevVol=S.workouts.slice(-16,-8).reduce((a,w)=>a+(w.volume||0),0);
- const delta=prevVol?Math.round((volKg-prevVol)/prevVol*100):null;
- const goalPct=volKg/S.weeklyVolumeGoalKg;
- const tone=goalPct>=1?'success':goalPct>=.7?'success':'warning';
- const label=goalPct>=1?'Goal met':goalPct>=.7?'On track':'Behind';
+ const weekSets=rd_weekTotalSets(),prevSets=rd_prevWeekTotalSets(),goalSets=rd_weekGoalSetsSum();
+ const delta=prevSets?Math.round((weekSets-prevSets)/prevSets*100):null;
+ const goalPct=goalSets>0?weekSets/goalSets:null;
+ const tone=goalPct==null?'warning':goalPct>=.7?'success':'warning';
+ const label=goalPct==null?'No goals set':goalPct>=1?'Goal met':goalPct>=.7?'On track':'Behind';
  let h='<div class="rd-view" style="padding-top:16px">';
  h+='<div style="padding:0 22px 8px"><div class="rd-eyebrow">This week</div><h1 class="rd-h1" style="margin-bottom:18px">Progress</h1>';
- h+=`<div class="rd-card" style="padding:20px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px"><div class="rd-stat-tile"><span class="lbl">Volume this week</span><span class="val">${volKg.toLocaleString()}<small>kg</small></span>${delta!=null?`<span class="delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}% vs last week</span>`:''}</div><span class="rd-badge rd-badge-${tone}">${label}</span></div>`;
+ h+=`<div class="rd-card" style="padding:20px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px"><div class="rd-stat-tile"><span class="lbl">Sets this week</span><span class="val">${weekSets}</span>${delta!=null?`<span class="delta ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta}% vs last week</span>`:''}</div><span class="rd-badge rd-badge-${tone}">${label}</span></div>`;
  h+='<div class="rd-chart">';
- rd_volumeSeries().forEach(d=>{h+=`<div class="rd-chart-col"><div class="rd-chart-bar" style="height:${d.h}px;background:${d.isToday?'var(--ink-800)':'var(--stone-300)'}"></div><span class="rd-chart-label">${d.label}</span></div>`});
+ rd_setsSeries().forEach(d=>{h+=`<div class="rd-chart-col"><div class="rd-chart-bar" style="height:${d.h}px;background:${d.isToday?'var(--ink-800)':'var(--stone-300)'}"></div><span class="rd-chart-label">${d.label}</span></div>`});
  h+='</div></div>';
  h+=`<div style="margin-top:22px"><div class="rd-tabs"><button class="rd-tab ${window.__rdProgressTab==='Exercises'?'active':''}" id="rdTabEx">Exercises</button><button class="rd-tab ${window.__rdProgressTab==='Measures'?'active':''}" id="rdTabMe">Measures</button></div><div style="padding-top:14px">`;
  if(window.__rdProgressTab==='Exercises'){
@@ -192,7 +198,6 @@ function rd_you(){
  h+=`<div class="rd-stat-grid"><div class="rd-stat-tile"><span class="lbl">Sessions</span><span class="val">${S.workouts.length}</span></div><div class="rd-stat-tile"><span class="lbl">Total lifted</span><span class="val">${(totalVol/1000).toFixed(1)}<small>t</small></span></div><div class="rd-stat-tile"><span class="lbl">PRs</span><span class="val">${prs}</span></div></div>`;
  h+='<div><div class="rd-eyebrow" style="margin-bottom:14px">Training</div><div style="display:flex;flex-direction:column;gap:18px">';
  h+=`<div class="rd-field"><label>Active split</label><select class="rd-select" id="rdSelProgram">${rd_programList().map(p=>`<option value="${esc(p.id)}" ${p.id===(S.activeProgram||'builtin')?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>`;
- h+=`<div class="rd-field"><label>Weekly volume goal</label><div class="rd-input-suffix"><input class="rd-input" id="rdVolGoal" type="number" inputmode="numeric" value="${S.weeklyVolumeGoalKg}"><span>kg</span></div></div>`;
  h+=`<div class="rd-switch-row"><span style="font-size:10.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--stone-500)">Units</span><div class="rd-segmented"><button class="${S.units==='kg'?'active':''}" data-unit="kg">kg</button><button class="${S.units==='lb'?'active':''}" data-unit="lb">lb</button></div></div>`;
  h+='</div></div>';
  h+='<div><div class="rd-eyebrow" style="margin-bottom:14px">Preferences</div><div style="display:flex;flex-direction:column;gap:16px">';
@@ -211,7 +216,6 @@ function rd_you(){
  h+='<div style="height:8px"></div></div></div>';
  document.getElementById('settings').innerHTML=h;
  document.getElementById('rdSelProgram').onchange=(e)=>rd_selectProgram(e.target.value);
- document.getElementById('rdVolGoal').onchange=(e)=>{S.weeklyVolumeGoalKg=parseInt(e.target.value)||S.weeklyVolumeGoalKg;save()};
  document.querySelectorAll('[data-unit]').forEach(b=>b.onclick=()=>{S.units=b.dataset.unit;save();rd_you()});
  document.getElementById('rdRestTimer').onchange=(e)=>{S.restTimerAuto=e.target.checked;save()};
  document.getElementById('rdWeeklyEmail').onchange=(e)=>{S.weeklyEmail=e.target.checked;save()};
@@ -220,7 +224,7 @@ function rd_you(){
  document.getElementById('rdExport').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));a.download='gym-tracker-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
  document.getElementById('rdImportBtn').onclick=()=>document.getElementById('rdImportFile').click();
  document.getElementById('rdImportFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const data=JSON.parse(r.result);if(!data.workouts||!data.metrics)throw 0;S=data;S.day=S.day??0;S.active=null;save();rd_toast('Backup restored');rd_you()}catch(_){rd_toast('Invalid backup file')}};r.readAsText(f)};
- document.getElementById('rdReset').onclick=()=>{if(confirm('Delete all workout and body data?')){S={day:0,workouts:[],metrics:[],active:null,programs:[],activeProgram:'builtin',volumeGoals:{},weeklyVolumeGoalKg:15000,units:'kg',restTimerAuto:true,weeklyEmail:false,showWarmups:true};save();rd_you();rd_toast('Reset complete')}};
+ document.getElementById('rdReset').onclick=()=>{if(confirm('Delete all workout and body data?')){S={day:0,workouts:[],metrics:[],active:null,programs:[],activeProgram:'builtin',volumeGoals:{},units:'kg',restTimerAuto:true,weeklyEmail:false,showWarmups:true};save();rd_you();rd_toast('Reset complete')}};
  window.__rdRenderAccountCard?.();
 }
 function rd_switchRow(label,id,checked){

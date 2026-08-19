@@ -1,4 +1,4 @@
-const BUILTIN_NAME='Hypertrophy Split';
+const BUILTIN_NAME='UL + Arnold';
 const BUILTIN_DAYS=[
 ["DAY 1 — UPPER","Upper chest + upper back + side delts",[["Incline DB/BB Press","3 × 6–10","2–3","Upper chest"],["Low-Incline Machine Press","2 × 8–12","2","Upper chest"],["Chest-Supported Row","3 × 6–10","2","Upper back"],["Neutral-Grip Pulldown","3 × 8–12","2","Back"],["Cable Lateral Raise","3 × 12–20","1–2","Side delts #1"],["Rear-Delt Fly","2 × 12–20","1–2","Rear delts"],["EZ-Bar Curl","2 × 8–12","1–2","Biceps"],["Cable Triceps Extension","2 × 10–15","1–2","Triceps"]]],
 ["DAY 2 — LOWER","Quads + hamstrings + calves",[["Hack Squat / High-Bar Squat","3 × 6–10","2–3","Quads"],["Leg Press","3 × 10–15","2","Quads"],["Seated Leg Curl","3 × 8–12","1–2","Hamstrings"],["Romanian Deadlift","2 × 6–10","2–3","Be conservative initially"],["Standing Calf Raise","4 × 8–12","1–2","Calves #1"],["Seated Calf Raise","2 × 12–20","1–2","Calves"],["Cable Crunch / Ab Wheel","3 × 8–15","1–2","Optional"]]],
