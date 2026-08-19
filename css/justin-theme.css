@@ -1,0 +1,148 @@
+/* ============================================================
+   Justin Gym Tracker — visual theme for Gym Tracker V4.3 (rzdjc/4.3.1)
+   Load AFTER css/style.css, css/v43.css, css/v5.css. Overrides visuals only —
+   no class names, markup or JS behaviour are touched.
+   ============================================================ */
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap");
+
+:root{
+  /* ink / stone / paper replace the near-black + blue palette */
+  --bg:#121314;--panel:#1C1D1F;--panel-hi:#2A2B2D;--panel2:#2A2B2D;
+  --line:rgba(244,242,237,.12);--text:#F4F2ED;--muted:#9A9488;--soft:#BDB8AE;
+  --accent:#C08A2E;--accent2:#A5751F;--accent-dim:#A5751F;
+  --nav:rgba(18,19,20,.9);--shadow:0 20px 60px -20px rgba(0,0,0,.55);
+  --warm:#BDB8AE;--danger:#C97B66;
+  --jgt-radius-card:3px;--jgt-radius-input:3px;--jgt-radius-pill:999px;
+}
+*{scrollbar-color:#3D3E40 transparent}
+html{background:var(--bg)}
+body{
+  background:var(--bg)!important;
+  font-family:"Barlow","Helvetica Neue",Arial,sans-serif!important;
+  letter-spacing:0!important;color:var(--text)
+}
+body:before{display:none}
+
+/* ---- type: Anton for display numerals & headlines, Barlow for everything else ---- */
+.page-head h2,.today-intro h2,.neo-title h3,.program-hero h3,.program-feature h3,
+.detail-title h2,.completion-neo h2,.completion h2,.tip-card h3{
+  font-family:"Anton","Barlow Condensed",sans-serif!important;
+  text-transform:uppercase;letter-spacing:-.01em!important;font-weight:400!important
+}
+.session-score strong,.big-stat strong,.small-stat strong,.metric-card strong,
+.history-date b,.hero-count strong,.timer-ring strong,.completion-stats strong{
+  font-family:"Barlow Semi Condensed",sans-serif!important;font-weight:700!important;
+  font-variant-numeric:tabular-nums
+}
+.eyebrow,.section-label,.brand small,.up-next span,.smart-target span,.next-pill,
+.exercise-tag,.exercise-art span,.big-stat span,.small-stat span,.day-chip span,
+.metric-card small,.finish-btn,.start-btn,.done,.secondary,.setting-row strong,
+.program-tile small,.tile-number,.last-line span,.version{
+  font-family:"Barlow",sans-serif!important;letter-spacing:.18em!important;font-weight:600!important
+}
+
+/* ---- accent: warm amber replaces bright blue everywhere via currentColor already wired to --accent ---- */
+
+/* ---- corners: square-first cards, pill actions ---- */
+.neo-exercise,.exercise-cover,.program-feature,.program-hero,.metric-card,.chart-card,
+.focus-card,.checkin-card,.settings-card,.tip-card,.history-card,.volume-card,
+.program-row,.program-switch,.builder-day,.ex-row,.big-stat,.small-stat,
+.detail-grid>div,.completion-grid div,#modalbox,.exercise-art{
+  border-radius:var(--jgt-radius-card)!important
+}
+.neo-set .input,.input,.field .input{border-radius:var(--jgt-radius-input)!important}
+.finish-btn,.start-btn,.secondary,.day-chip,.program-switch,.pill,.icon-btn,
+.modal-close,.completion-glow,.completion-mark{border-radius:var(--jgt-radius-pill)!important}
+.done{border-radius:4px!important}
+.brand-mark{border-radius:4px!important}
+
+/* ---- surfaces ---- */
+.topbar{background:rgba(18,19,20,.86)!important;border-bottom:1px solid var(--line)!important}
+.neo-exercise,.exercise-cover,.program-feature,.metric-card,.chart-card,.focus-card,
+.checkin-card,.settings-card,.tip-card,.history-card,.volume-card,.big-stat,.small-stat,
+.program-row,.builder-day,.ex-row,#modalbox,.detail-grid>div,.completion-grid div{
+  background:var(--panel)!important;border-color:var(--line)!important;box-shadow:none!important
+}
+.program-hero,.program-feature-top,.metric-card.featured,.big-stat{
+  background:var(--panel)!important
+}
+.exercise-art{background:var(--panel-hi)!important;filter:none!important}
+.exercise-art:before{background:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.85) 100%)!important}
+.art-person{opacity:0!important} /* brand has no hand-drawn illustration; art crops to a flat scrim */
+.exercise-art:after{display:none}
+.bottom-nav{background:var(--nav)!important;border-top:1px solid var(--line)!important}
+.bottom-nav button.active{background:transparent!important}
+.bottom-nav button.active span{color:var(--accent)!important}
+#modal{background:rgba(18,19,20,.72)!important}
+.timer{background:rgba(18,19,20,.96)!important;border-color:var(--line)!important;box-shadow:var(--shadow)}
+.timer-ring{border-color:var(--line)!important}
+.timer-ring strong{color:var(--accent)!important}
+
+/* ---- text colour ---- */
+.page-head p,.today-intro p,.workout-hero p,.hero p,.neo-title p,.recovery-card p,
+.program-feature p,.program-hero p,.exercise-heading p,.metric-card span,.focus-grid>div>span,
+.setting-row small,.history-row small,.history-card p,.tip-card p,.empty-panel p{color:var(--muted)!important}
+.exercise-heading h3,.program-tile strong,.history-row strong,.setting-row strong,.metric-card em{color:var(--text)!important}
+
+/* ---- buttons & inputs ---- */
+.finish-btn,.start-btn{background:var(--accent)!important;color:#121314!important;box-shadow:none!important}
+.done.is-done{background:var(--accent)!important;border-color:var(--accent)!important;color:#121314!important;box-shadow:none!important}
+.neo-set .input:focus,.input:focus{border-color:var(--accent)!important;box-shadow:0 0 0 2px rgba(192,138,46,.18)!important}
+.day-chip.active{background:var(--accent)!important;color:#121314!important;border-color:var(--accent)!important;box-shadow:none!important}
+.progress-track i,.hero-progress span,.mini-bar i,.volume-goal-row u,.focus-grid u{background:var(--accent)!important;box-shadow:none!important}
+.volume-goal-row.met u{background:var(--accent)!important}
+.pill{background:rgba(192,138,46,.16)!important;border-color:rgba(192,138,46,.4)!important;color:var(--accent)!important}
+.up-next{border-left-color:var(--accent)!important;background:linear-gradient(90deg,rgba(192,138,46,.10),transparent 72%)!important}
+.up-next strong,.smart-target span{color:var(--accent)!important}
+.smart-target{border-top-color:var(--line)!important}
+.program-row.active{border-color:rgba(192,138,46,.4)!important}
+.hero-orb{background:rgba(192,138,46,.12)!important;border-color:rgba(192,138,46,.35)!important;color:var(--accent)!important}
+
+/* ---- motion: keep their easing, just slow the bounce to match brand restraint ---- */
+.done.is-done{animation:none!important}
+.neo-exercise,.program-tile{animation:none!important}
+
+/* ---- real training photography, replacing the flat scrim per movement pattern ---- */
+.exercise-art:before{background-size:cover!important;background-position:center!important;filter:saturate(.62) contrast(1.12) brightness(.9)}
+.exercise-art.pose-press:before{background-image:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.88) 100%),url(../images/press.jpg)!important;background-position:center 25%!important}
+.exercise-art.pose-raise:before{background-image:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.88) 100%),url(../images/raise.jpg)!important;background-position:center top!important}
+.exercise-art.pose-pull:before{background-image:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.88) 100%),url(../images/raise.jpg)!important;background-position:center 75%!important}
+.exercise-art.pose-core:before{background-image:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.88) 100%),url(../images/raise.jpg)!important;background-position:center 55%!important}
+.exercise-art.pose-curl:before{background-image:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.88) 100%),url(../images/equipment.jpg)!important;background-position:left center!important}
+.exercise-art.pose-squat:before{background-image:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.88) 100%),url(../images/equipment.jpg)!important;background-position:right center!important}
+.exercise-art.pose-calf:before{background-image:linear-gradient(180deg,rgba(18,19,20,0) 30%,rgba(18,19,20,.88) 100%),url(../images/equipment.jpg)!important;background-position:center 70%!important}
+
+/* ---- compact + wide layout pass, Today page ---- */
+.neo-body{padding:13px 15px 15px!important}
+.exercise-art{height:148px!important}
+.neo-exercise{margin:9px 0!important}
+.neo-set{margin:5px 0!important}
+.neo-set .input{height:42px!important}
+.today-intro{padding:10px 2px 8px!important}
+.up-next{margin:0 0 12px!important;padding:10px 14px!important}
+.smart-target{margin:9px 0 0!important;padding:8px 0 0!important}
+.last-line{padding:8px 0!important;margin-bottom:8px!important}
+.neo-title h3{font-size:19px!important;margin:2px 0!important}
+.neo-title p{margin:0!important}
+.exercise-note{min-height:30px!important;margin-top:7px!important;padding:8px 0 0!important}
+.progress-track{margin:0 3px 14px!important}
+
+@media(min-width:860px){
+  main{max-width:1180px}
+  .exercise-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .exercise-grid .neo-exercise{margin:0!important}
+}
+@media(min-width:1360px){
+  .exercise-grid{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ---- restrained motion: plain fades/scales, no bounce, matching brand ---- */
+@keyframes jgtFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.neo-exercise,.program-tile{animation:jgtFadeIn .4s ease-out backwards!important}
+@keyframes jgtCheckIn{from{transform:scale(.85)}to{transform:scale(1)}}
+.done.is-done{animation:jgtCheckIn .16s ease-out!important}
+@keyframes jgtKenBurns{from{transform:scale(1)}to{transform:scale(1.07)}}
+.exercise-art:before{animation:jgtKenBurns 22s ease-in-out infinite alternate}
+@media(prefers-reduced-motion:reduce){
+  .neo-exercise,.program-tile,.done.is-done,.exercise-art:before{animation:none!important}
+}
