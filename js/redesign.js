@@ -157,8 +157,9 @@ function rd_progress(){
 }
 function rd_muscleGoalRows(){
  const actual=actualWeeklySets(),prevActual=rd_prevWeekMuscleSets(),goals=S.volumeGoals||{};
- const tags=new Set([...Object.keys(actual),...Object.keys(goals),...Object.keys(prevActual)]);
- if(!tags.size)return '<div style="padding:20px 18px;color:var(--stone-500);font-size:13px">Log a workout to see your sets by body part here.</div>';
+ const programTags=Object.keys(exerciseTotals());
+ const tags=new Set([...programTags,...Object.keys(actual),...Object.keys(goals),...Object.keys(prevActual)]);
+ if(!tags.size)return '<div style="padding:20px 18px;color:var(--stone-500);font-size:13px">Select a program with exercises to set weekly goals by body part.</div>';
  const sorted=[...tags].sort((a,b)=>(actual[b]||0)-(actual[a]||0)||a.localeCompare(b));
  const maxSets=Math.max(...sorted.map(t=>actual[t]||0),1);
  return sorted.map(t=>{
