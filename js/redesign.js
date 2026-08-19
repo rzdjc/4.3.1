@@ -25,6 +25,7 @@ function rd_weekDone(){const dates=new Set(rd_weekWorkouts().map(w=>w.date));ret
 function rd_setsCount(w){return (w.entries||[]).reduce((a,e)=>a+(e.sets?.length||0),0)}
 function rd_weekTotalSets(){return Object.values(actualWeeklySets()).reduce((a,v)=>a+v,0)}
 function rd_prevWeekTotalSets(){const start=rd_weekCutoff(14),end=rd_weekCutoff(7);let total=0;S.workouts.forEach(w=>{if(w.date>=start&&w.date<end)total+=rd_setsCount(w)});return total}
+function rd_prevWeekMuscleSets(){const start=rd_weekCutoff(14),end=rd_weekCutoff(7);const totals={};S.workouts.forEach(w=>{if(w.date<start||w.date>=end)return;(w.entries||[]).forEach(e=>{const tag=exerciseTagFor(e.exercise);totals[tag]=(totals[tag]||0)+(e.sets?.length||0)})});return totals}
 function rd_weekGoalSetsSum(){return Object.values(S.volumeGoals||{}).reduce((a,v)=>a+v,0)}
 function rd_setsSeries(){const days=[];const now=new Date();for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10))}const byDate={};S.workouts.forEach(w=>{byDate[w.date]=(byDate[w.date]||0)+rd_setsCount(w)});const vals=days.map(d=>byDate[d]||0);const max=Math.max(...vals,1);return days.map((d,i)=>({h:Math.round((vals[i]/max)*104)||2,isToday:d===today(),label:new Date(d+'T00:00').getDay()===0?'S':'MTWTFS'[new Date(d+'T00:00').getDay()-1]||'S',v:vals[i]}))}
 
@@ -117,7 +118,9 @@ function rd_progress(){
  h+='<div class="rd-chart">';
  rd_setsSeries().forEach(d=>{h+=`<div class="rd-chart-col"><div class="rd-chart-bar" style="height:${d.h}px;background:${d.isToday?'var(--ink-800)':'var(--stone-300)'}"></div><span class="rd-chart-label">${d.label}</span></div>`});
  h+='</div></div>';
- h+=`<div style="margin-top:22px"><div class="rd-tabs"><button class="rd-tab ${window.__rdProgressTab==='Exercises'?'active':''}" id="rdTabEx">Exercises</button><button class="rd-tab ${window.__rdProgressTab==='Measures'?'active':''}" id="rdTabMe">Measures</button></div><div style="padding-top:14px">`;
+ h+='<div class="rd-eyebrow" style="margin:22px 0 4px">Sets by body part</div><div style="font-size:11px;color:var(--stone-500);margin-bottom:10px">This week vs last week. Tap a row to set a goal.</div>';
+ h+='<div class="rd-card pad-0">'+rd_muscleGoalRows()+'</div>';
+ h+=`<div style="margin-top:26px"><div class="rd-tabs"><button class="rd-tab ${window.__rdProgressTab==='Exercises'?'active':''}" id="rdTabEx">Exercises</button><button class="rd-tab ${window.__rdProgressTab==='Measures'?'active':''}" id="rdTabMe">Measures</button></div><div style="padding-top:14px">`;
  if(window.__rdProgressTab==='Exercises'){
   const names=[...new Set(activeDays().flatMap(d=>d[2]).map(e=>e[0]))];
   const lastW=S.workouts[S.workouts.length-1];
@@ -138,8 +141,6 @@ function rd_progress(){
   h+='</div>';
  }
  h+='</div></div>';
- h+='<div class="rd-eyebrow" style="margin:26px 0 10px">Weekly muscle volume</div>';
- h+='<div class="rd-card pad-0">'+rd_muscleGoalRows()+'</div>';
  h+='<div style="height:20px"></div></div></div>';
  document.getElementById('progress').innerHTML=h;
  document.getElementById('rdTabEx').onclick=()=>{window.__rdProgressTab='Exercises';rd_progress()};
@@ -148,11 +149,17 @@ function rd_progress(){
  document.querySelectorAll('[data-goal-tag2]').forEach(b=>b.onclick=()=>rd_openGoalEditor(b.dataset.goalTag2));
 }
 function rd_muscleGoalRows(){
- const actual=actualWeeklySets(),goals=S.volumeGoals||{};
- const tags=new Set([...Object.keys(actual),...Object.keys(goals)]);
- if(!tags.size)return '<div style="padding:20px 18px;color:var(--stone-500);font-size:13px">Log a workout to see muscle volume here.</div>';
+ const actual=actualWeeklySets(),prevActual=rd_prevWeekMuscleSets(),goals=S.volumeGoals||{};
+ const tags=new Set([...Object.keys(actual),...Object.keys(goals),...Object.keys(prevActual)]);
+ if(!tags.size)return '<div style="padding:20px 18px;color:var(--stone-500);font-size:13px">Log a workout to see your sets by body part here.</div>';
  const sorted=[...tags].sort((a,b)=>(actual[b]||0)-(actual[a]||0)||a.localeCompare(b));
- return sorted.map((t,i)=>{const sets=actual[t]||0,goal=goals[t],met=goal&&sets>=goal;return `<button class="rd-row" data-goal-tag2="${esc(t)}" style="${i?'':'border-top:0'}"><div class="body"><div class="name" style="font-size:14px">${esc(t)}</div><div class="meta">${sets}${goal?` / ${goal}`:''} sets${met?' · met':''}</div></div>${met?'<span class="rd-badge rd-badge-success">✓</span>':''}</button>`}).join('')
+ const maxSets=Math.max(...sorted.map(t=>actual[t]||0),1);
+ return sorted.map(t=>{
+  const sets=actual[t]||0,goal=goals[t],prev=prevActual[t]||0,met=!!goal&&sets>=goal;
+  const pct=goal?Math.min(100,Math.round(sets/goal*100)):Math.round(sets/maxSets*100);
+  const delta=sets-prev;
+  return `<button class="rd-muscle-row" data-goal-tag2="${esc(t)}"><div class="rd-muscle-row-top"><span class="rd-muscle-name">${esc(t)}</span><span class="rd-muscle-count">${sets}${goal?`<b> / ${goal}</b>`:''} sets${delta!==0?`<em class="${delta>0?'up':'down'}">${delta>0?'+':''}${delta} vs last wk</em>`:''}${met?' <span class="rd-badge rd-badge-success" style="margin-left:4px">✓</span>':''}</span></div><div class="rd-progress-track" style="height:5px"><div class="rd-progress-fill${met?' met':''}" style="width:${pct}%"></div></div></button>`;
+ }).join('')
 }
 function rd_openGoalEditor(tag){
  const current=S.volumeGoals?.[tag]||'';
@@ -361,7 +368,7 @@ function rd_renderSession(){
  h+=`<div style="margin-bottom:16px"><span class="rd-tag selected">${esc(ex[3])}</span></div>`;
  if(lastSet)h+=`<div class="rd-session-last">Last time: ${esc(lastSet.w)}kg × ${esc(lastSet.r)} × ${last.sets.length}</div>`;
  if(!logs.length)h+='<div class="rd-session-empty">Nothing logged yet. Start with one set.</div>';
- logs.forEach((l,i)=>{h+=`<div class="rd-set-row rd-fade"><span class="idx">${i+1}</span><span class="vals">${esc(l.w)} kg × ${esc(l.r)}</span>${l.pr?'<span class="rd-badge rd-badge-success">PR</span>':''}<svg class="check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>`});
+ logs.forEach((l,i)=>{h+=`<div class="rd-set-row rd-fade"><span class="idx">${i+1}</span><span class="vals">${esc(l.w)} kg × ${esc(l.r)}</span>${l.pr?'<span class="rd-badge rd-badge-success">PR</span>':''}<button class="rd-iconbtn sm" data-del-set="${i}" aria-label="Delete set ${i+1}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`});
  h+='<div style="height:16px"></div></div>';
  h+=`<div class="rd-session-bottom"><div class="rd-stepper-row">
   <div class="rd-stepper"><span class="lbl">Weight</span><div class="rd-stepper-ctrl"><button data-step="w-" aria-label="Decrease weight">−</button><span class="rd-stepper-val" id="rdStepWVal">${step.w} kg</span><button data-step="w+" aria-label="Increase weight">+</button></div></div>
@@ -387,6 +394,13 @@ function rd_renderSession(){
   rd_toast(`Set logged — ${step.w}kg × ${step.r}`);
   rd_renderSession();
  };
+ document.querySelectorAll('[data-del-set]').forEach(b=>b.onclick=()=>{
+  const i=+b.dataset.delSet;
+  entries[exIndex].sets.splice(i,1);
+  save();
+  rd_toast('Set removed');
+  rd_renderSession();
+ });
  document.getElementById('rdAdvance').onclick=()=>{
   if(exIndex>=day[2].length-1){rd_finishSession();return}
   S.active.exIndex=exIndex+1;save();rd_renderSession();

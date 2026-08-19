@@ -88,6 +88,17 @@ body:before{display:none!important}
 .rd-progress-caption{font-family:"Barlow Semi Condensed",sans-serif;font-size:12px;font-weight:600;color:var(--ink-800)}
 .rd-progress-track{height:6px;background:var(--stone-100);border-radius:var(--radius-panel);overflow:hidden}
 .rd-progress-fill{height:100%;background:var(--ink-800);border-radius:inherit;transition:width .6s var(--ease-entrance)}
+.rd-progress-fill.met{background:var(--success)}
+
+.rd-muscle-row{display:block;width:100%;text-align:left;background:none;border:0;padding:13px 18px;cursor:pointer}
+.rd-muscle-row+.rd-muscle-row{border-top:1px solid var(--border-hairline)}
+.rd-muscle-row-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+.rd-muscle-name{font-family:"Barlow Semi Condensed",sans-serif;font-size:15px;font-weight:600;color:var(--ink-900);flex:0 0 auto}
+.rd-muscle-count{font-size:11px;color:var(--stone-500);white-space:nowrap;text-align:right}
+.rd-muscle-count b{color:var(--ink-800);font-weight:600;font-style:normal}
+.rd-muscle-count em{font-style:normal;font-weight:600;margin-left:5px}
+.rd-muscle-count em.up{color:var(--success)}
+.rd-muscle-count em.down{color:var(--danger)}
 
 .rd-card{background:var(--white);border:1px solid var(--border-hairline);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:18px}
 .rd-card.pad-0{padding:0}
@@ -206,6 +217,8 @@ body:before{display:none!important}
 .rd-set-row .idx{font-family:"Barlow Semi Condensed",sans-serif;font-size:12px;font-weight:700;color:var(--stone-400);width:20px}
 .rd-set-row .vals{flex:1;font-family:"Barlow Semi Condensed",sans-serif;font-size:15px;font-weight:600;color:var(--ink-900)}
 .rd-set-row .check{color:var(--success)}
+.rd-set-row [data-del-set]{color:var(--stone-400);flex:0 0 auto;margin:-8px -6px -8px 0}
+.rd-set-row [data-del-set]:hover,.rd-set-row [data-del-set]:active{color:var(--danger)}
 
 .rd-builder-day{border:1px solid var(--border-hairline);border-radius:var(--radius-card);padding:14px;display:flex;flex-direction:column;gap:12px}
 .rd-builder-ex{display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--stone-100);border-radius:var(--radius-xs)}
