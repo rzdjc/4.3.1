@@ -166,11 +166,13 @@ function rd_progress(){
  h+='<div class="rd-eyebrow" style="margin:22px 0 4px">Sets by body part</div><div style="font-size:11px;color:var(--stone-500);margin-bottom:10px">This week vs last week. Tap a row to set a goal.</div>';
  h+='<div class="rd-card pad-0">'+rd_muscleGoalRows()+'</div>';
  const topInsights=rd_topInsights(3);
+ h+='<div class="rd-eyebrow" style="margin:26px 0 4px">Insights</div><div class="rd-card pad-0">';
  if(topInsights.length){
-  h+='<div class="rd-eyebrow" style="margin:26px 0 4px">Insights</div><div class="rd-card pad-0">';
   topInsights.forEach(ins=>{h+=`<button class="rd-row" data-insight-ex="${esc(ins.name)}"><div class="body"><div class="name">${esc(ins.name)}</div><div class="meta">${ins.text}</div></div><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>`});
-  h+='</div>';
+ } else {
+  h+='<div style="padding:20px 18px;color:var(--stone-500);font-size:13px">Log an exercise 3 times to see how it\'s trending.</div>';
  }
+ h+='</div>';
  h+=`<div style="margin-top:26px"><div class="rd-tabs"><button class="rd-tab ${window.__rdProgressTab==='Exercises'?'active':''}" id="rdTabEx">Exercises</button><button class="rd-tab ${window.__rdProgressTab==='Measures'?'active':''}" id="rdTabMe">Measures</button></div><div style="padding-top:14px">`;
  if(window.__rdProgressTab==='Exercises'){
   const names=[...new Set(activeDays().flatMap(d=>d[2]).map(e=>e[0]))];
