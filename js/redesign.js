@@ -227,7 +227,7 @@ function rd_history(){
   S.workouts.slice().reverse().forEach((x,idx)=>{
    const sets=(x.entries||[]).reduce((a,e)=>a+(e.sets?.length||0),0),reps=(x.entries||[]).reduce((a,e)=>a+(e.sets||[]).reduce((b,s)=>b+(+s.r||0),0),0);
    const prs=x.prs?.length||0;
-   h+=`<div class="rd-card interactive rd-fade" style="animation-delay:${Math.min(idx*50,200)}ms" data-hist="${S.workouts.length-1-idx}"><div class="rd-history-card"><div class="rd-history-date"><span>${esc(x.date.slice(5))}</span><b>${String(S.workouts.length-idx).padStart(2,'0')}</b></div><div class="body"><div class="name">${esc(x.day.replace(/^DAY \d+ — /,''))}</div><div class="meta">${sets} sets · ${reps} reps · ${(x.volume||0).toLocaleString()} kg</div></div>${prs?`<span class="rd-badge rd-badge-success">${prs} PR${prs>1?'s':''}</span>`:''}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div></div>`;
+   h+=`<div class="rd-card interactive rd-fade" style="animation-delay:${Math.min(idx*50,200)}ms" data-hist="${S.workouts.length-1-idx}"><div class="rd-history-card"><div class="rd-history-date"><span>${esc(x.date.slice(5))}</span><b>${String(S.workouts.length-idx).padStart(2,'0')}</b></div><div class="body"><div class="name">${esc(x.day.replace(/^DAY \d+ — /,''))}</div><div class="meta">${sets} sets · ${reps} reps</div></div>${prs?`<span class="rd-badge rd-badge-success">${prs} PR${prs>1?'s':''}</span>`:''}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div></div>`;
   });
   h+='</div>';
  }
@@ -237,7 +237,8 @@ function rd_history(){
 }
 function rd_openHistoryDetail(i){
  const w=S.workouts[i];if(!w)return;
- let body=`<div style="font-size:11px;color:var(--stone-500);margin-bottom:10px">${esc(w.date)} · ${(w.volume||0).toLocaleString()} kg volume</div>`;
+ const setsCount=(w.entries||[]).reduce((a,e)=>a+(e.sets?.length||0),0);
+ let body=`<div style="font-size:11px;color:var(--stone-500);margin-bottom:10px">${esc(w.date)} · ${setsCount} set${setsCount===1?'':'s'}</div>`;
  (w.entries||[]).forEach(e=>{body+=`<div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border-hairline);font-size:14px"><span style="font-weight:600;font-family:'Barlow Semi Condensed',sans-serif">${esc(e.exercise)}</span><span style="color:var(--stone-500)">${esc(e.summary||'')}</span></div>`});
  rd_openDialog(`<div class="rd-dialog-title">${esc(w.day.replace(/^DAY \d+ — /,''))}</div>${body}<div class="rd-dialog-footer"><button class="rd-btn ghost sm" id="rdHistClose">Close</button></div>`);
  document.getElementById('rdHistClose').onclick=rd_closeDialog;
@@ -246,11 +247,11 @@ function rd_openHistoryDetail(i){
 /* ---------- You (settings) ---------- */
 function rd_you(){
  const prs=S.workouts.reduce((a,w)=>a+(w.prs?.length||0),0);
- const totalVol=S.workouts.reduce((a,w)=>a+(w.volume||0),0);
+ const totalSets=S.workouts.reduce((a,w)=>a+rd_setsCount(w),0);
  let h='<div class="rd-view">';
  h+=`<div class="rd-you-hero" style="background-image:url(images/wraps-portrait.jpg)"><div class="rd-you-hero-content"><div class="rd-eyebrow" style="color:rgba(255,255,255,.8);margin-bottom:8px">Your training</div><h1 class="rd-h1" style="color:var(--white)">You</h1></div></div>`;
  h+='<div style="padding:22px;display:flex;flex-direction:column;gap:24px">';
- h+=`<div class="rd-stat-grid"><div class="rd-stat-tile"><span class="lbl">Sessions</span><span class="val">${S.workouts.length}</span></div><div class="rd-stat-tile"><span class="lbl">Total lifted</span><span class="val">${(totalVol/1000).toFixed(1)}<small>t</small></span></div><div class="rd-stat-tile"><span class="lbl">PRs</span><span class="val">${prs}</span></div></div>`;
+ h+=`<div class="rd-stat-grid"><div class="rd-stat-tile"><span class="lbl">Sessions</span><span class="val">${S.workouts.length}</span></div><div class="rd-stat-tile"><span class="lbl">Total sets</span><span class="val">${totalSets}</span></div><div class="rd-stat-tile"><span class="lbl">PRs</span><span class="val">${prs}</span></div></div>`;
  h+='<div><div class="rd-eyebrow" style="margin-bottom:14px">Training</div><div style="display:flex;flex-direction:column;gap:18px">';
  h+=`<div class="rd-field"><label>Active split</label><select class="rd-select" id="rdSelProgram">${rd_programList().map(p=>`<option value="${esc(p.id)}" ${p.id===(S.activeProgram||'builtin')?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>`;
  h+=`<div class="rd-switch-row"><span style="font-size:10.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--stone-500)">Units</span><div class="rd-segmented"><button class="${S.units==='kg'?'active':''}" data-unit="kg">kg</button><button class="${S.units==='lb'?'active':''}" data-unit="lb">lb</button></div></div>`;
@@ -546,9 +547,8 @@ function rd_finishSession(){
  });
  if(!rows.length){rd_toast('Log at least one set first');return}
  const prCount=allSets.filter(s=>s.pr).length;
- const totalVolume=allSets.reduce((a,s)=>a+(parseFloat(s.w)||0)*(parseFloat(s.r)||0),0);
  const durationMin=S.active?.startedAt?Math.max(1,Math.round((Date.now()-S.active.startedAt)/60000)):null;
- const workoutRec={date:today(),day:day[0],entries:rows,volume:Math.round(totalVolume),prs:new Array(prCount).fill('PR')};
+ const workoutRec={date:today(),day:day[0],entries:rows,prs:new Array(prCount).fill('PR')};
  if(durationMin!=null)workoutRec.duration=durationMin;
  S.workouts.push(workoutRec);
  clearInterval(window.__rdRestInt);
@@ -566,14 +566,15 @@ function rd_ensureCompleteEl(){
 function rd_showCompletion(workoutRec,totalExercises){
  const rows=workoutRec.entries||[];
  const sets=rows.reduce((a,e)=>a+e.sets.length,0);
+ const reps=rows.reduce((a,e)=>a+e.sets.reduce((b,s)=>b+(+s.r||0),0),0);
  const prRows=rows.filter(e=>e.pr).map(e=>{
   const best=e.sets.filter(s=>s.pr).reduce((b,s)=>(parseFloat(s.w)||0)>(parseFloat(b.w)||0)?s:b,e.sets.find(s=>s.pr));
   return {exercise:e.exercise,w:best.w,r:best.r};
  });
  const dayName=esc(workoutRec.day.replace(/^DAY \d+ — /,''));
  const stats=workoutRec.duration!=null
-  ?[['Duration',`${workoutRec.duration}<small>min</small>`],['Sets',sets],['Volume',`${workoutRec.volume.toLocaleString()}<small>kg</small>`]]
-  :[['Sets',sets],['Volume',`${workoutRec.volume.toLocaleString()}<small>kg</small>`],['Exercises',`${rows.length}<small>/ ${totalExercises}</small>`]];
+  ?[['Duration',`${workoutRec.duration}<small>min</small>`],['Sets',sets],['Reps',reps]]
+  :[['Sets',sets],['Reps',reps],['Exercises',`${rows.length}<small>/ ${totalExercises}</small>`]];
  let h='<div class="rd-complete-body">';
  h+='<div class="rd-complete-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>';
  h+=`<div class="rd-eyebrow">Workout complete</div><h1 class="rd-h1" style="margin-bottom:4px">${dayName}</h1>`;
