@@ -1,4 +1,4 @@
-const CACHE='gym-tracker-v6-redesign-5';
+const CACHE='gym-tracker-v6-redesign-6';
 const ASSETS=['./','./index.html','./css/style.css','./css/v43.css','./css/v5.css','./css/justin-theme.css','./css/redesign.css','./js/vendor/supabase.min.js','./js/app.js','./js/v43.js','./js/redesign.js','./js/sync.js','./manifest.json','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-512-maskable.png','./icons/apple-touch-icon.png','./icons/favicon-32.png','./images/press.jpg','./images/raise.jpg','./images/equipment.jpg','./images/bench-rest.jpg','./images/wraps-portrait.jpg'];
 // Large, rarely-changing assets: fine to serve cache-first.
 const STABLE=/\/(vendor|images|icons)\//;

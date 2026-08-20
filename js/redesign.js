@@ -56,6 +56,7 @@ function rd_weekGoalSetsSum(){return Object.values(S.volumeGoals||{}).reduce((a,
 function rd_setsSeries(){const days=[];const now=new Date();for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10))}const byDate={};S.workouts.forEach(w=>{byDate[w.date]=(byDate[w.date]||0)+rd_setsCount(w)});const vals=days.map(d=>byDate[d]||0);const max=Math.max(...vals,1);return days.map((d,i)=>({h:Math.round((vals[i]/max)*104)||2,isToday:d===today(),label:new Date(d+'T00:00').getDay()===0?'S':'MTWTFS'[new Date(d+'T00:00').getDay()-1]||'S',v:vals[i]}))}
 
 function rd_toast(msg){toast(msg)}
+function rd_haptic(pattern){try{navigator.vibrate?.(pattern)}catch(_){}}
 
 function rd_openDialog(html){document.getElementById('modalbody').innerHTML=html;document.getElementById('modal').classList.remove('hidden')}
 function rd_closeDialog(){document.getElementById('modal').classList.add('hidden')}
@@ -106,7 +107,7 @@ function rd_program(){
  rd_programList().forEach(p=>{h+=`<button class="rd-tag ${p.id===(S.activeProgram||'builtin')?'selected':''}" data-select-prog="${esc(p.id)}">${esc(p.name)}</button>`});
  h+='<button class="rd-tag" id="rdNewSplit">+ New split</button></div>';
  h+='<div class="rd-chip-row" style="margin-bottom:18px">';
- days.forEach((d,i)=>{h+=`<div class="rd-day-chip ${i===active?'active':''}" data-select-day="${i}"><b>${String(i+1).padStart(2,'0')}</b><span>${!d[2].length?'Rest':esc((d[0].split('—')[1]||d[0]).trim())}</span></div>`});
+ days.forEach((d,i)=>{h+=`<button class="rd-day-chip ${i===active?'active':''}" data-select-day="${i}" aria-label="Day ${i+1}${!d[2].length?', rest':''}"><b>${String(i+1).padStart(2,'0')}</b><span>${!d[2].length?'Rest':esc((d[0].split('—')[1]||d[0]).trim())}</span></button>`});
  h+='</div>';
  if(!day[2].length){
   h+=`<div class="rd-card"><div class="rd-eyebrow" style="margin-bottom:0">Day ${active+1}</div><h2 class="rd-h2">Recovery</h2><div style="font-size:13px;color:var(--stone-500);margin-top:10px;line-height:1.5">Keep activity easy — walking, mobility, sleep. You don't need to force a session.</div></div>`;
@@ -227,7 +228,7 @@ function rd_history(){
   S.workouts.slice().reverse().forEach((x,idx)=>{
    const sets=(x.entries||[]).reduce((a,e)=>a+(e.sets?.length||0),0),reps=(x.entries||[]).reduce((a,e)=>a+(e.sets||[]).reduce((b,s)=>b+(+s.r||0),0),0);
    const prs=x.prs?.length||0;
-   h+=`<div class="rd-card interactive rd-fade" style="animation-delay:${Math.min(idx*50,200)}ms" data-hist="${S.workouts.length-1-idx}"><div class="rd-history-card"><div class="rd-history-date"><span>${esc(x.date.slice(5))}</span><b>${String(S.workouts.length-idx).padStart(2,'0')}</b></div><div class="body"><div class="name">${esc(x.day.replace(/^DAY \d+ — /,''))}</div><div class="meta">${sets} sets · ${reps} reps</div></div>${prs?`<span class="rd-badge rd-badge-success">${prs} PR${prs>1?'s':''}</span>`:''}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div></div>`;
+   h+=`<button class="rd-card interactive rd-fade" style="animation-delay:${Math.min(idx*50,200)}ms" data-hist="${S.workouts.length-1-idx}"><div class="rd-history-card"><div class="rd-history-date"><span>${esc(x.date.slice(5))}</span><b>${String(S.workouts.length-idx).padStart(2,'0')}</b></div><div class="body"><div class="name">${esc(x.day.replace(/^DAY \d+ — /,''))}</div><div class="meta">${sets} sets · ${reps} reps</div></div>${prs?`<span class="rd-badge rd-badge-success">${prs} PR${prs>1?'s':''}</span>`:''}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div></button>`;
   });
   h+='</div>';
  }
@@ -420,7 +421,7 @@ function rd_renderSession(){
  h+=`<div style="margin-bottom:16px"><span class="rd-tag selected">${esc(ex[3])}</span></div>`;
  if(lastSet)h+=`<div class="rd-session-last">Last time: ${esc(lastSet.w)}kg × ${esc(lastSet.r)} × ${last.sets.length}</div>`;
  if(!logs.length)h+='<div class="rd-session-empty">Nothing logged yet. Start with one set.</div>';
- logs.forEach((l,i)=>{h+=`<div class="rd-set-row rd-fade" data-edit-set="${i}"><span class="idx">${i+1}</span><span class="vals">${esc(l.w)} kg × ${esc(l.r)}</span>${l.pr?'<span class="rd-badge rd-badge-success">PR</span>':''}<button class="rd-iconbtn sm" data-del-set="${i}" aria-label="Delete set ${i+1}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`});
+ logs.forEach((l,i)=>{h+=`<div class="rd-set-row rd-fade" data-edit-set="${i}" role="button" tabindex="0" aria-label="Edit set ${i+1}: ${esc(l.w)}kg by ${esc(l.r)} reps"><span class="idx">${i+1}</span><span class="vals">${esc(l.w)} kg × ${esc(l.r)}</span>${l.pr?'<span class="rd-badge rd-badge-success">PR</span>':''}<button class="rd-iconbtn sm" data-del-set="${i}" aria-label="Delete set ${i+1}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`});
  h+='<div style="height:16px"></div></div>';
  const timer=S.active.timer;
  h+='<div class="rd-session-bottom">';
@@ -468,10 +469,14 @@ function rd_renderSession(){
   entries[exIndex]=entries[exIndex]||{sets:[]};
   entries[exIndex].sets.push({w:step.w,r:step.r,pr:isPr});
   save();
-  rd_toast(`Set logged — ${step.w}kg × ${step.r}`);
+  rd_haptic(isPr?[15,60,15]:12);
+  rd_toast(isPr?`New PR — ${step.w}kg × ${step.r}`:`Set logged — ${step.w}kg × ${step.r}`);
   if(S.restTimerAuto)rd_startRestTimer();else rd_renderSession();
  };
- document.querySelectorAll('[data-edit-set]').forEach(row=>row.onclick=()=>rd_openSetEditor(exIndex,+row.dataset.editSet));
+ document.querySelectorAll('[data-edit-set]').forEach(row=>{
+  row.onclick=()=>rd_openSetEditor(exIndex,+row.dataset.editSet);
+  row.onkeydown=(e)=>{if((e.key==='Enter'||e.key===' ')&&e.target===row){e.preventDefault();rd_openSetEditor(exIndex,+row.dataset.editSet)}};
+ });
  document.querySelectorAll('[data-del-set]').forEach(b=>b.onclick=(e)=>{
   e.stopPropagation();
   const i=+b.dataset.delSet;
@@ -500,6 +505,7 @@ function rd_tickRestTimer(){
   if(left<=0){
    S.active.timer=null;save();
    clearInterval(window.__rdRestInt);
+   rd_haptic([40,80,40]);
    rd_toast('Rest complete — next set');
    rd_renderSession();
    return;
@@ -576,13 +582,13 @@ function rd_showCompletion(workoutRec,totalExercises){
   ?[['Duration',`${workoutRec.duration}<small>min</small>`],['Sets',sets],['Reps',reps]]
   :[['Sets',sets],['Reps',reps],['Exercises',`${rows.length}<small>/ ${totalExercises}</small>`]];
  let h='<div class="rd-complete-body">';
- h+='<div class="rd-complete-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>';
+ h+='<div class="rd-complete-mark rd-pop"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>';
  h+=`<div class="rd-eyebrow">Workout complete</div><h1 class="rd-h1" style="margin-bottom:4px">${dayName}</h1>`;
  h+=`<div style="font-size:13px;color:var(--stone-500);margin-bottom:22px">${rows.length} of ${totalExercises} exercise${totalExercises===1?'':'s'} logged</div>`;
  h+=`<div class="rd-stat-grid">${stats.map(([lbl,val])=>`<div class="rd-stat-tile"><span class="lbl">${esc(lbl)}</span><span class="val">${val}</span></div>`).join('')}</div>`;
  if(prRows.length){
   h+='<div class="rd-eyebrow" style="margin:26px 0 10px">New PR</div>';
-  prRows.forEach(p=>{h+=`<div class="rd-pr-card"><span class="name">${esc(p.exercise)}</span><span class="val">${esc(p.w)}kg × ${esc(p.r)}</span></div>`});
+  prRows.forEach((p,i)=>{h+=`<div class="rd-pr-card rd-fade" style="animation-delay:${Math.min(i*60,240)}ms"><span class="name">${esc(p.exercise)}</span><span class="val">${esc(p.w)}kg × ${esc(p.r)}</span></div>`});
  }
  h+='<div class="rd-eyebrow" style="margin:26px 0 2px">Logged</div><div>';
  rows.forEach(e=>{h+=`<div class="rd-complete-exrow"><span class="name">${esc(e.exercise)}</span><span class="val">${esc(e.summary||'')}</span></div>`});
@@ -592,6 +598,7 @@ function rd_showCompletion(workoutRec,totalExercises){
  const el=rd_ensureCompleteEl();
  el.innerHTML=h;
  el.classList.remove('hidden');
+ rd_haptic(25);
  document.getElementById('rdCompleteDone').onclick=rd_closeCompletion;
 }
 function rd_closeCompletion(){
