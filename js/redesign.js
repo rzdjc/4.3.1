@@ -371,7 +371,7 @@ function rd_renderSession(){
  }
  const step=window[stepKey];
  const el=rd_ensureSessionEl();
- let h=`<div class="rd-session-head"><div class="rd-session-topbar"><button class="rd-iconbtn onDark" id="rdExitSession" aria-label="Exit session"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="rd-session-daylabel">${esc(day[0].replace(/^DAY \d+ — /,''))}</span><div style="width:40px"></div></div><div class="rd-session-info"><div class="rd-session-exof">Exercise ${exIndex+1} of ${day[2].length}</div><div class="rd-session-exname">${esc(ex[0])}</div><div class="rd-progress-track" style="margin-top:16px;background:rgba(244,242,237,.18)"><div class="rd-progress-fill" style="background:var(--stone-300);width:${Math.min(100,Math.round(logs.length/r.sets*100))}%"></div></div><div class="rd-session-target"><span>Target</span><span>${rd_targetLabel(ex[0])}</span></div></div></div>`;
+ let h=`<div class="rd-session-head"><div class="rd-session-topbar"><button class="rd-iconbtn onDark" id="rdExitSession" aria-label="Exit session"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="rd-session-daylabel">${esc(day[0].replace(/^DAY \d+ — /,''))}</span><div style="width:40px"></div></div><div class="rd-session-info"><div class="rd-session-nav"><button class="rd-iconbtn onDark" id="rdPrevEx" aria-label="Previous exercise" ${exIndex===0?'disabled':''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="rd-session-exof" id="rdExList" aria-label="Jump to exercise">Exercise ${exIndex+1} of ${day[2].length}<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button><button class="rd-iconbtn onDark" id="rdNextEx" aria-label="Skip to next exercise" ${exIndex>=day[2].length-1?'disabled':''}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button></div><div class="rd-session-exname">${esc(ex[0])}</div><div class="rd-progress-track" style="margin-top:16px;background:rgba(244,242,237,.18)"><div class="rd-progress-fill" style="background:var(--stone-300);width:${Math.min(100,Math.round(logs.length/r.sets*100))}%"></div></div><div class="rd-session-target"><span>Target</span><span>${rd_targetLabel(ex[0])}</span></div></div></div>`;
  h+='<div class="rd-session-body">';
  h+=`<div style="margin-bottom:16px"><span class="rd-tag selected">${esc(ex[3])}</span></div>`;
  if(lastSet)h+=`<div class="rd-session-last">Last time: ${esc(lastSet.w)}kg × ${esc(lastSet.r)} × ${last.sets.length}</div>`;
@@ -385,6 +385,9 @@ function rd_renderSession(){
  el.innerHTML=h;
  el.classList.remove('hidden');
  document.getElementById('rdExitSession').onclick=rd_exitSession;
+ document.getElementById('rdExList').onclick=rd_openSessionExerciseList;
+ document.getElementById('rdPrevEx').onclick=()=>{if(exIndex>0){S.active.exIndex=exIndex-1;save();rd_renderSession()}};
+ document.getElementById('rdNextEx').onclick=()=>{if(exIndex<day[2].length-1){S.active.exIndex=exIndex+1;save();rd_renderSession()}};
  document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{
   const a=b.dataset.step;
   if(a==='w-')step.w=Math.max(0,step.w-2.5);
@@ -413,6 +416,22 @@ function rd_renderSession(){
   if(exIndex>=day[2].length-1){rd_finishSession();return}
   S.active.exIndex=exIndex+1;save();rd_renderSession();
  };
+}
+function rd_openSessionExerciseList(){
+ const day=activeDays()[S.day],entries=rd_sessionEntries(),cur=S.active.exIndex;
+ let body='';
+ day[2].forEach((ex,i)=>{
+  const r=rd_rangeFor(ex[0]);
+  const done=(entries[i]?.sets||[]).length,met=done>=r.sets;
+  body+=`<button class="rd-row${i===cur?' current':''}" data-jump-ex="${i}"><span class="num">${String(i+1).padStart(2,'0')}</span><div class="body"><div class="name">${esc(ex[0])}${i===cur?' · current':''}</div><div class="meta">${done}/${r.sets} sets logged</div></div>${met?'<span class="rd-badge rd-badge-success">✓</span>':''}</button>`;
+ });
+ rd_openDialog(`<div class="rd-dialog-title">Jump to exercise</div><div class="rd-card pad-0">${body}</div><div class="rd-dialog-footer"><button class="rd-btn ghost sm" id="rdJumpClose">Close</button></div>`);
+ document.getElementById('rdJumpClose').onclick=rd_closeDialog;
+ document.querySelectorAll('[data-jump-ex]').forEach(b=>b.onclick=()=>{
+  const i=+b.dataset.jumpEx;
+  if(i!==S.active.exIndex){S.active.exIndex=i;save()}
+  rd_closeDialog();rd_renderSession();
+ });
 }
 function rd_finishSession(){
  const day=activeDays()[S.day],entries=rd_sessionEntries();
