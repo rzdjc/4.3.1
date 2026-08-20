@@ -36,10 +36,28 @@ function rd_exerciseInsight(name){
  const diff=+(latest-baseline.bestWeight).toFixed(1);
  if(Math.abs(diff)<0.5){
   const lastThree=rows.slice(0,3).map(r=>r.bestWeight);
-  if(lastThree.every(w=>w===lastThree[0]&&w>0))return {text:`Your best set has held at ${lastThree[0]}kg for 3 sessions.`};
+  if(lastThree.every(w=>w===lastThree[0]&&w>0))return {text:`Best set has held at ${lastThree[0]}kg for 3 sessions.`,diff:0,stalled:true};
   return null;
  }
- return {text:`${esc(name)} is ${diff>0?'up':'down'} ${Math.abs(diff)}kg over the last 6 weeks.`};
+ return {text:`${diff>0?'Up':'Down'} ${Math.abs(diff)}kg over the last 6 weeks.`,diff};
+}
+function rd_exerciseTrend(name){
+ const rows=rd_exerciseHistory(name).slice().reverse();
+ return rows.map(r=>r.bestWeight).filter(w=>w>0);
+}
+function rd_topInsights(limit){
+ const names=[...new Set(activeDays().flatMap(d=>d[2]).map(e=>e[0]))];
+ const items=names.map(n=>{const ins=rd_exerciseInsight(n);return ins?{name:n,...ins}:null}).filter(Boolean);
+ items.sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+ return items.slice(0,limit||3);
+}
+function rd_sparkline(values){
+ if(values.length<2)return '<div style="padding:22px 0;text-align:center;color:var(--stone-500);font-size:12px">Add one more logged session to see a trend.</div>';
+ const min=Math.min(...values),max=Math.max(...values),range=max-min||1;
+ const pts=values.map((v,i)=>`${(i/(values.length-1))*100},${100-((v-min)/range)*76-12}`);
+ const line=pts.join(' ');
+ const area=`0,100 ${line} 100,100`;
+ return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:64px;display:block;color:var(--ink-800)"><polygon points="${area}" fill="currentColor" opacity=".07"/><polyline points="${line}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg>`;
 }
 
 function rd_weekCutoff(days){const c=new Date();c.setDate(c.getDate()-(days-1));return c.toISOString().slice(0,10)}
@@ -147,6 +165,12 @@ function rd_progress(){
  h+='</div></div>';
  h+='<div class="rd-eyebrow" style="margin:22px 0 4px">Sets by body part</div><div style="font-size:11px;color:var(--stone-500);margin-bottom:10px">This week vs last week. Tap a row to set a goal.</div>';
  h+='<div class="rd-card pad-0">'+rd_muscleGoalRows()+'</div>';
+ const topInsights=rd_topInsights(3);
+ if(topInsights.length){
+  h+='<div class="rd-eyebrow" style="margin:26px 0 4px">Insights</div><div class="rd-card pad-0">';
+  topInsights.forEach(ins=>{h+=`<button class="rd-row" data-insight-ex="${esc(ins.name)}"><div class="body"><div class="name">${esc(ins.name)}</div><div class="meta">${ins.text}</div></div><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>`});
+  h+='</div>';
+ }
  h+=`<div style="margin-top:26px"><div class="rd-tabs"><button class="rd-tab ${window.__rdProgressTab==='Exercises'?'active':''}" id="rdTabEx">Exercises</button><button class="rd-tab ${window.__rdProgressTab==='Measures'?'active':''}" id="rdTabMe">Measures</button></div><div style="padding-top:14px">`;
  if(window.__rdProgressTab==='Exercises'){
   const names=[...new Set(activeDays().flatMap(d=>d[2]).map(e=>e[0]))];
@@ -183,6 +207,7 @@ function rd_progress(){
  document.getElementById('rdOpenCheckin')?.addEventListener('click',rd_openCheckin);
  document.querySelectorAll('[data-goal-tag2]').forEach(b=>b.onclick=()=>rd_openGoalEditor(b.dataset.goalTag2));
  document.querySelectorAll('[data-ex-hist]').forEach(b=>b.onclick=()=>rd_openExerciseHistory(b.dataset.exHist));
+ document.querySelectorAll('[data-insight-ex]').forEach(b=>b.onclick=()=>rd_openExerciseHistory(b.dataset.insightEx));
 }
 function rd_muscleGoalRows(){
  const actual=actualWeeklySets(),prevActual=rd_prevWeekMuscleSets(),goals=S.volumeGoals||{};
@@ -201,7 +226,13 @@ function rd_muscleGoalRows(){
 function rd_openExerciseHistory(name){
  const rows=rd_exerciseHistory(name);
  const insight=rd_exerciseInsight(name);
- let body=insight?`<div class="rd-insight-box">${insight.text}</div>`:'';
+ const trend=rd_exerciseTrend(name);
+ let body='';
+ if(trend.length>=2){
+  const min=trend.reduce((a,v)=>Math.min(a,v)),max=trend.reduce((a,v)=>Math.max(a,v)),cur=trend[trend.length-1];
+  body+=`<div style="margin-bottom:16px">${rd_sparkline(trend)}<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--stone-500);margin-top:6px"><span>${min}kg</span><span style="color:var(--ink-900);font-weight:600">${cur}kg now</span><span>${max}kg</span></div></div>`;
+ }
+ body+=insight?`<div class="rd-insight-box">${insight.text}</div>`:'';
  if(!rows.length){
   body+='<div style="padding:16px 2px;color:var(--stone-500);font-size:13px">No previous sessions. Complete this exercise to start building your history.</div>';
  } else {
@@ -219,22 +250,37 @@ function rd_openGoalEditor(tag){
 
 /* ---------- History ---------- */
 function rd_history(){
+ window.__rdHistoryFilter=window.__rdHistoryFilter||'All';
+ const dayNames=[...new Set(S.workouts.map(w=>w.day.replace(/^DAY \d+ — /,'')))];
  let h='<div class="rd-view" style="padding-top:16px">';
  h+=`<div style="padding:0 22px 8px"><div class="rd-eyebrow">${S.workouts.length} session${S.workouts.length===1?'':'s'}</div><h1 class="rd-h1" style="margin-bottom:18px">History</h1>`;
  if(!S.workouts.length){
   h+='<div class="rd-card" style="text-align:center;padding:34px 22px"><div style="font-size:13px;color:var(--stone-500);line-height:1.6">No sessions yet. Finish a workout and it will show up here.</div></div>';
  } else {
-  h+='<div style="display:flex;flex-direction:column;gap:10px">';
-  S.workouts.slice().reverse().forEach((x,idx)=>{
-   const sets=(x.entries||[]).reduce((a,e)=>a+(e.sets?.length||0),0),reps=(x.entries||[]).reduce((a,e)=>a+(e.sets||[]).reduce((b,s)=>b+(+s.r||0),0),0);
-   const prs=x.prs?.length||0;
-   h+=`<button class="rd-card interactive rd-fade" style="animation-delay:${Math.min(idx*50,200)}ms" data-hist="${S.workouts.length-1-idx}"><div class="rd-history-card"><div class="rd-history-date"><span>${esc(x.date.slice(5))}</span><b>${String(S.workouts.length-idx).padStart(2,'0')}</b></div><div class="body"><div class="name">${esc(x.day.replace(/^DAY \d+ — /,''))}</div><div class="meta">${sets} sets · ${reps} reps</div></div>${prs?`<span class="rd-badge rd-badge-success">${prs} PR${prs>1?'s':''}</span>`:''}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div></button>`;
-  });
-  h+='</div>';
+  if(dayNames.length>1){
+   h+='<div class="rd-chip-row" style="margin-bottom:14px">';
+   h+=`<button class="rd-tag ${window.__rdHistoryFilter==='All'?'selected':''}" data-hist-filter="All">All</button>`;
+   dayNames.forEach(n=>{h+=`<button class="rd-tag ${window.__rdHistoryFilter===n?'selected':''}" data-hist-filter="${esc(n)}">${esc(n)}</button>`});
+   h+='</div>';
+  }
+  const filtered=S.workouts.filter(w=>window.__rdHistoryFilter==='All'||w.day.replace(/^DAY \d+ — /,'')===window.__rdHistoryFilter);
+  if(!filtered.length){
+   h+='<div class="rd-card" style="text-align:center;padding:34px 22px"><div style="font-size:13px;color:var(--stone-500);line-height:1.6">No sessions match this filter.</div></div>';
+  } else {
+   h+='<div style="display:flex;flex-direction:column;gap:10px">';
+   filtered.slice().reverse().forEach((x,idx)=>{
+    const originalIndex=S.workouts.indexOf(x);
+    const sets=(x.entries||[]).reduce((a,e)=>a+(e.sets?.length||0),0),reps=(x.entries||[]).reduce((a,e)=>a+(e.sets||[]).reduce((b,s)=>b+(+s.r||0),0),0);
+    const prs=x.prs?.length||0;
+    h+=`<button class="rd-card interactive rd-fade" style="animation-delay:${Math.min(idx*50,200)}ms" data-hist="${originalIndex}"><div class="rd-history-card"><div class="rd-history-date"><span>${esc(x.date.slice(5))}</span><b>${String(filtered.length-idx).padStart(2,'0')}</b></div><div class="body"><div class="name">${esc(x.day.replace(/^DAY \d+ — /,''))}</div><div class="meta">${sets} sets · ${reps} reps</div></div>${prs?`<span class="rd-badge rd-badge-success">${prs} PR${prs>1?'s':''}</span>`:''}<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></div></button>`;
+   });
+   h+='</div>';
+  }
  }
  h+='<div style="height:20px"></div></div></div>';
  document.getElementById('history').innerHTML=h;
  document.querySelectorAll('[data-hist]').forEach(b=>b.onclick=()=>rd_openHistoryDetail(+b.dataset.hist));
+ document.querySelectorAll('[data-hist-filter]').forEach(b=>b.onclick=()=>{window.__rdHistoryFilter=b.dataset.histFilter;rd_history()});
 }
 function rd_openHistoryDetail(i){
  const w=S.workouts[i];if(!w)return;
