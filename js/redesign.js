@@ -4,6 +4,7 @@
 (function(){
 S.units=S.units||'kg';
 S.restTimerAuto=S.restTimerAuto??true;
+S.restTimerSeconds=S.restTimerSeconds||90;
 S.weeklyEmail=S.weeklyEmail??false;
 S.showWarmups=S.showWarmups??true;
 
@@ -15,6 +16,31 @@ function rd_bestWeight(name){let best=0;S.workouts.forEach(w=>(w.entries||[]).fo
 function rd_kg(w){return S.units==='lb'?Math.round(w*2.20462):Math.round(w)}
 function rd_unitLabel(){return S.units==='lb'?'lb':'kg'}
 function rd_programList(){return [{id:'builtin',name:BUILTIN_NAME,days:BUILTIN_DAYS},...(S.programs||[])]}
+function rd_exerciseHistory(name){
+ const rows=[];
+ S.workouts.forEach(w=>{
+  const e=(w.entries||[]).find(x=>x.exercise===name);
+  if(!e||!e.sets?.length)return;
+  const best=e.sets.reduce((b,s)=>(parseFloat(s.w)||0)>(parseFloat(b.w)||0)?s:b,e.sets[0]);
+  rows.push({date:w.date,summary:e.summary||e.sets.map(s=>`${s.w}×${s.r}`).join(', '),pr:!!e.pr,bestWeight:parseFloat(best.w)||0});
+ });
+ return rows.reverse();
+}
+function rd_exerciseInsight(name){
+ const rows=rd_exerciseHistory(name);
+ if(rows.length<3)return null;
+ const latest=rows[0].bestWeight;
+ const cutoff=rd_weekCutoff(43);
+ let baseline=rows[rows.length-1];
+ for(let i=rows.length-1;i>=0;i--){if(rows[i].date>=cutoff){baseline=rows[i];break}}
+ const diff=+(latest-baseline.bestWeight).toFixed(1);
+ if(Math.abs(diff)<0.5){
+  const lastThree=rows.slice(0,3).map(r=>r.bestWeight);
+  if(lastThree.every(w=>w===lastThree[0]&&w>0))return {text:`Your best set has held at ${lastThree[0]}kg for 3 sessions.`};
+  return null;
+ }
+ return {text:`${esc(name)} is ${diff>0?'up':'down'} ${Math.abs(diff)}kg over the last 6 weeks.`};
+}
 
 function rd_weekCutoff(days){const c=new Date();c.setDate(c.getDate()-(days-1));return c.toISOString().slice(0,10)}
 function rd_weekWorkouts(){const cutoff=rd_weekCutoff(7);return S.workouts.filter(w=>w.date>=cutoff)}
@@ -125,6 +151,7 @@ function rd_progress(){
   const names=[...new Set(activeDays().flatMap(d=>d[2]).map(e=>e[0]))];
   const lastW=S.workouts[S.workouts.length-1];
   if(!names.length)h+='<div style="padding:24px 2px;color:var(--stone-500);font-size:13px">No exercises in your active program.</div>';
+  else h+='<div style="font-size:11px;color:var(--stone-500);margin-bottom:10px">Tap an exercise to see its history.</div>';
   const byTag={};
   names.forEach(n=>{const tag=exerciseTagFor(n);(byTag[tag]=byTag[tag]||[]).push(n)});
   const tags=Object.keys(byTag).sort((a,b)=>byTag[b].length-byTag[a].length||a.localeCompare(b));
@@ -133,7 +160,7 @@ function rd_progress(){
    byTag[tag].forEach(n=>{
     const best=rd_bestWeight(n);
     const isPr=!!lastW&&(lastW.entries||[]).some(e=>e.exercise===n&&e.pr);
-    h+=`<div class="rd-ex-row"><span class="rd-ex-name">${esc(n)}</span>${isPr?'<span class="rd-badge rd-badge-success">New PR</span>':''}<span class="rd-ex-best">${best?rd_kg(best)+' '+rd_unitLabel():'—'}</span></div>`;
+    h+=`<button class="rd-ex-row" data-ex-hist="${esc(n)}"><span class="rd-ex-name">${esc(n)}</span>${isPr?'<span class="rd-badge rd-badge-success">New PR</span>':''}<span class="rd-ex-best">${best?rd_kg(best)+' '+rd_unitLabel():'—'}</span></button>`;
    });
    h+='</details>';
   });
@@ -154,6 +181,7 @@ function rd_progress(){
  document.getElementById('rdTabMe').onclick=()=>{window.__rdProgressTab='Measures';rd_progress()};
  document.getElementById('rdOpenCheckin')?.addEventListener('click',rd_openCheckin);
  document.querySelectorAll('[data-goal-tag2]').forEach(b=>b.onclick=()=>rd_openGoalEditor(b.dataset.goalTag2));
+ document.querySelectorAll('[data-ex-hist]').forEach(b=>b.onclick=()=>rd_openExerciseHistory(b.dataset.exHist));
 }
 function rd_muscleGoalRows(){
  const actual=actualWeeklySets(),prevActual=rd_prevWeekMuscleSets(),goals=S.volumeGoals||{};
@@ -168,6 +196,18 @@ function rd_muscleGoalRows(){
   const delta=sets-prev;
   return `<button class="rd-muscle-row" data-goal-tag2="${esc(t)}"><div class="rd-muscle-row-top"><span class="rd-muscle-name">${esc(t)}</span><span class="rd-muscle-count">${sets}${goal?`<b> / ${goal}</b>`:''} sets${delta!==0?`<em class="${delta>0?'up':'down'}">${delta>0?'+':''}${delta} vs last wk</em>`:''}${met?' <span class="rd-badge rd-badge-success" style="margin-left:4px">✓</span>':''}${goal?'':'<span class="rd-goal-cta">+ Set goal</span>'}</span></div><div class="rd-progress-track" style="height:5px"><div class="rd-progress-fill${met?' met':''}" style="width:${pct}%"></div></div></button>`;
  }).join('')
+}
+function rd_openExerciseHistory(name){
+ const rows=rd_exerciseHistory(name);
+ const insight=rd_exerciseInsight(name);
+ let body=insight?`<div class="rd-insight-box">${insight.text}</div>`:'';
+ if(!rows.length){
+  body+='<div style="padding:16px 2px;color:var(--stone-500);font-size:13px">No previous sessions. Complete this exercise to start building your history.</div>';
+ } else {
+  rows.forEach(r=>{body+=`<div class="rd-complete-exrow"><span class="name">${esc(r.date)}</span><span class="val">${esc(r.summary)}${r.pr?' · PR':''}</span></div>`});
+ }
+ rd_openDialog(`<div class="rd-dialog-title">${esc(name)}</div>${body}<div class="rd-dialog-footer"><button class="rd-btn ghost sm" id="rdExHistClose">Close</button></div>`);
+ document.getElementById('rdExHistClose').onclick=rd_closeDialog;
 }
 function rd_openGoalEditor(tag){
  const current=S.volumeGoals?.[tag]||'';
@@ -217,6 +257,7 @@ function rd_you(){
  h+='</div></div>';
  h+='<div><div class="rd-eyebrow" style="margin-bottom:14px">Preferences</div><div style="display:flex;flex-direction:column;gap:16px">';
  h+=rd_switchRow('Rest timer auto-start','rdRestTimer',S.restTimerAuto);
+ h+=`<div class="rd-field"><label>Default rest duration</label><select class="rd-select" id="rdRestSeconds"><option value="60" ${S.restTimerSeconds===60?'selected':''}>60 sec</option><option value="90" ${S.restTimerSeconds===90?'selected':''}>90 sec</option><option value="120" ${S.restTimerSeconds===120?'selected':''}>2 min</option><option value="180" ${S.restTimerSeconds===180?'selected':''}>3 min</option></select></div>`;
  h+=rd_switchRow('Weekly summary email','rdWeeklyEmail',S.weeklyEmail);
  h+=`<label class="rd-check-row"><input type="checkbox" id="rdShowWarmups" ${S.showWarmups?'checked':''}> Show warm-up sets in history</label>`;
  h+='</div></div>';
@@ -233,13 +274,14 @@ function rd_you(){
  document.getElementById('rdSelProgram').onchange=(e)=>rd_selectProgram(e.target.value);
  document.querySelectorAll('[data-unit]').forEach(b=>b.onclick=()=>{S.units=b.dataset.unit;save();rd_you()});
  document.getElementById('rdRestTimer').onchange=(e)=>{S.restTimerAuto=e.target.checked;save()};
+ document.getElementById('rdRestSeconds').onchange=(e)=>{S.restTimerSeconds=+e.target.value;save()};
  document.getElementById('rdWeeklyEmail').onchange=(e)=>{S.weeklyEmail=e.target.checked;save()};
  document.getElementById('rdShowWarmups').onchange=(e)=>{S.showWarmups=e.target.checked;save()};
  document.getElementById('rdInstall2').onclick=()=>window.deferred?.prompt()||rd_toast('Use your browser menu to install');
  document.getElementById('rdExport').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));a.download='gym-tracker-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
  document.getElementById('rdImportBtn').onclick=()=>document.getElementById('rdImportFile').click();
  document.getElementById('rdImportFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const data=JSON.parse(r.result);if(!data.workouts||!data.metrics)throw 0;S=data;S.day=S.day??0;S.active=null;save();rd_toast('Backup restored');rd_you()}catch(_){rd_toast('Invalid backup file')}};r.readAsText(f)};
- document.getElementById('rdReset').onclick=()=>{if(confirm('Delete all workout and body data?')){S={day:0,workouts:[],metrics:[],active:null,programs:[],activeProgram:'builtin',volumeGoals:{},units:'kg',restTimerAuto:true,weeklyEmail:false,showWarmups:true};save();rd_you();rd_toast('Reset complete')}};
+ document.getElementById('rdReset').onclick=()=>{if(confirm('Delete all workout and body data?')){S={day:0,workouts:[],metrics:[],active:null,programs:[],activeProgram:'builtin',volumeGoals:{},units:'kg',restTimerAuto:true,restTimerSeconds:90,weeklyEmail:false,showWarmups:true};save();rd_you();rd_toast('Reset complete')}};
  window.__rdRenderAccountCard?.();
 }
 function rd_switchRow(label,id,checked){
@@ -348,6 +390,7 @@ function rd_startSession(exIndex){
 function rd_exitSession(){
  const total=Object.values(rd_sessionEntries()).reduce((a,l)=>a+(l.sets?.length||0),0);
  if(total>0){rd_openEndConfirm();return}
+ clearInterval(window.__rdRestInt);
  S.active=null;save();
  rd_ensureSessionEl().classList.add('hidden');
 }
@@ -378,12 +421,34 @@ function rd_renderSession(){
  if(!logs.length)h+='<div class="rd-session-empty">Nothing logged yet. Start with one set.</div>';
  logs.forEach((l,i)=>{h+=`<div class="rd-set-row rd-fade" data-edit-set="${i}"><span class="idx">${i+1}</span><span class="vals">${esc(l.w)} kg × ${esc(l.r)}</span>${l.pr?'<span class="rd-badge rd-badge-success">PR</span>':''}<button class="rd-iconbtn sm" data-del-set="${i}" aria-label="Delete set ${i+1}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`});
  h+='<div style="height:16px"></div></div>';
- h+=`<div class="rd-session-bottom"><div class="rd-stepper-row">
+ const timer=S.active.timer;
+ h+='<div class="rd-session-bottom">';
+ if(timer){
+  const left=timer.paused?Math.max(0,timer.end-timer.pausedAt):Math.max(0,timer.end-Date.now());
+  const sec=Math.ceil(left/1000);
+  h+=`<div class="rd-rest-timer"><div class="rd-rest-ring"><span id="rdRestVal">${String(Math.floor(sec/60)).padStart(1,'0')}:${String(sec%60).padStart(2,'0')}</span></div><div class="rd-rest-info"><b>Resting</b><span>Next set when you're ready.</span></div><div class="rd-rest-actions"><button data-rest="plus">+30</button><button data-rest="pause">${timer.paused?'Resume':'Pause'}</button><button data-rest="skip">Skip</button></div></div>`;
+ } else {
+  h+='<button class="rd-manual-rest" id="rdManualRest">Start rest timer</button>';
+ }
+ h+=`<div class="rd-stepper-row">
   <div class="rd-stepper"><span class="lbl">Weight</span><div class="rd-stepper-ctrl"><button data-step="w-" aria-label="Decrease weight">−</button><span class="rd-stepper-val" id="rdStepWVal">${step.w} kg</span><button data-step="w+" aria-label="Increase weight">+</button></div></div>
   <div class="rd-stepper"><span class="lbl">Reps</span><div class="rd-stepper-ctrl"><button data-step="r-" aria-label="Decrease reps">−</button><span class="rd-stepper-val" id="rdStepRVal">${step.r}</span><button data-step="r+" aria-label="Increase reps">+</button></div></div>
  </div><div class="rd-session-actions"><button class="rd-btn primary lg" id="rdLogSet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>Log set</button><button class="rd-btn outline lg" id="rdAdvance">${exIndex>=day[2].length-1?'Finish workout':'Next exercise'}</button></div></div>`;
  el.innerHTML=h;
  el.classList.remove('hidden');
+ if(timer)rd_tickRestTimer();
+ document.getElementById('rdManualRest')?.addEventListener('click',()=>rd_startRestTimer());
+ document.querySelectorAll('[data-rest]').forEach(b=>b.onclick=()=>{
+  const t=S.active.timer;if(!t)return;
+  const a=b.dataset.rest;
+  if(a==='plus'){t.end+=30000;save()}
+  else if(a==='skip'){S.active.timer=null;save();clearInterval(window.__rdRestInt);rd_renderSession()}
+  else if(a==='pause'){
+   if(t.paused){t.end+=Date.now()-t.pausedAt;t.paused=false;t.pausedAt=null}
+   else{t.paused=true;t.pausedAt=Date.now()}
+   save();rd_renderSession();
+  }
+ });
  document.getElementById('rdExitSession').onclick=rd_exitSession;
  document.getElementById('rdExList').onclick=rd_openSessionExerciseList;
  document.getElementById('rdPrevEx').onclick=()=>{if(exIndex>0){S.active.exIndex=exIndex-1;save();rd_renderSession()}};
@@ -403,7 +468,7 @@ function rd_renderSession(){
   entries[exIndex].sets.push({w:step.w,r:step.r,pr:isPr});
   save();
   rd_toast(`Set logged — ${step.w}kg × ${step.r}`);
-  rd_renderSession();
+  if(S.restTimerAuto)rd_startRestTimer();else rd_renderSession();
  };
  document.querySelectorAll('[data-edit-set]').forEach(row=>row.onclick=()=>rd_openSetEditor(exIndex,+row.dataset.editSet));
  document.querySelectorAll('[data-del-set]').forEach(b=>b.onclick=(e)=>{
@@ -418,6 +483,29 @@ function rd_renderSession(){
   if(exIndex>=day[2].length-1){rd_finishSession();return}
   S.active.exIndex=exIndex+1;save();rd_renderSession();
  };
+}
+function rd_startRestTimer(seconds){
+ S.active.timer={end:Date.now()+(seconds||S.restTimerSeconds||90)*1000,paused:false,pausedAt:null};
+ save();
+ rd_renderSession();
+}
+function rd_tickRestTimer(){
+ clearInterval(window.__rdRestInt);
+ window.__rdRestInt=setInterval(()=>{
+  const t=S.active?.timer;
+  if(!t){clearInterval(window.__rdRestInt);return}
+  if(t.paused)return;
+  const left=Math.max(0,t.end-Date.now());
+  if(left<=0){
+   S.active.timer=null;save();
+   clearInterval(window.__rdRestInt);
+   rd_toast('Rest complete — next set');
+   rd_renderSession();
+   return;
+  }
+  const el=document.getElementById('rdRestVal');
+  if(el){const sec=Math.ceil(left/1000);el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`}
+ },500);
 }
 function rd_openSetEditor(exIndex,setIndex){
  const entries=rd_sessionEntries();
@@ -463,6 +551,7 @@ function rd_finishSession(){
  const workoutRec={date:today(),day:day[0],entries:rows,volume:Math.round(totalVolume),prs:new Array(prCount).fill('PR')};
  if(durationMin!=null)workoutRec.duration=durationMin;
  S.workouts.push(workoutRec);
+ clearInterval(window.__rdRestInt);
  S.active=null;save();
  rd_ensureSessionEl().classList.add('hidden');
  rd_showCompletion(workoutRec,day[2].length);
