@@ -230,7 +230,20 @@ button.rd-session-exof{background:none;border:0;padding:0;cursor:pointer;display
 .rd-session-actions{display:flex;gap:10px}
 .rd-session-actions .rd-btn{flex:1}
 
-.rd-set-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-hairline)}
+.rd-complete{position:fixed;inset:0;background:var(--paper);z-index:75;display:flex;flex-direction:column}
+.rd-complete-body{flex:1;overflow-y:auto;padding:calc(28px + env(safe-area-inset-top)) 22px 20px}
+.rd-complete-mark{width:56px;height:56px;border-radius:50%;background:var(--success-bg);color:var(--success);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.rd-complete-bottom{flex:0 0 auto;padding:14px 22px calc(18px + env(safe-area-inset-bottom));background:var(--surface-glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--border-hairline)}
+.rd-complete-exrow{display:flex;justify-content:space-between;gap:12px;padding:11px 2px;border-top:1px solid var(--border-hairline);font-size:13px}
+.rd-complete-exrow:first-child{border-top:0}
+.rd-complete-exrow .name{color:var(--ink-900);font-weight:600}
+.rd-complete-exrow .val{color:var(--stone-500);text-align:right}
+.rd-pr-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--success-bg);border-radius:var(--radius-card);padding:14px 16px}
+.rd-pr-card+.rd-pr-card{margin-top:8px}
+.rd-pr-card .name{font-weight:600;font-size:13px;color:var(--ink-900)}
+.rd-pr-card .val{font-family:"Barlow Semi Condensed",sans-serif;font-size:15px;font-weight:700;color:var(--success);white-space:nowrap}
+.rd-set-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-hairline);cursor:pointer}
+.rd-set-row:active{background:var(--stone-100)}
 .rd-set-row .idx{font-family:"Barlow Semi Condensed",sans-serif;font-size:12px;font-weight:700;color:var(--stone-400);width:20px}
 .rd-set-row .vals{flex:1;font-family:"Barlow Semi Condensed",sans-serif;font-size:15px;font-weight:600;color:var(--ink-900)}
 .rd-set-row .check{color:var(--success)}

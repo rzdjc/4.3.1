@@ -61,7 +61,7 @@ function rd_today(){
   h+=`<div class="rd-fade" style="animation-delay:.15s"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span class="rd-eyebrow" style="margin:0">Plan</span><span style="font-size:11px;color:var(--stone-500)">${esc(activeProgramName())}</span></div><div class="rd-card pad-0">`;
   day[2].forEach((ex,i)=>{
    const last=lastForExercise(ex[0]);
-   h+=`<button class="rd-row rd-row-anim rd-fade" style="animation-delay:${Math.min(i*40,200)}ms" data-info="${i}"><svg class="icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M2 9v6M18 7v10M22 9v6M6 12h12"/></svg><div class="body"><div class="name">${esc(ex[0])}</div><div class="meta">${rd_targetLabel(ex[0])}${last?` · last ${esc(last.sets?.[last.sets.length-1]?.w||'')}kg`:''}</div></div><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>`;
+   h+=`<button class="rd-row rd-row-anim rd-fade" style="animation-delay:${Math.min(i*40,200)}ms" data-info="${i}"><svg class="icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M2 9v6M18 7v10M22 9v6M6 12h12"/></svg><div class="body"><div class="name">${esc(ex[0])}</div><div class="meta">${rd_targetLabel(ex[0])}${last?.summary?` · last ${esc(last.summary)}`:''}</div></div><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>`;
   });
   h+='</div></div>';
  }
@@ -340,7 +340,7 @@ function rd_sessionEntries(){S.active=S.active||{day:S.day,mode:'session',entrie
 function rd_startSession(exIndex){
  const day=activeDays()[S.day];
  if(!day[2].length)return;
- if(!(S.active&&S.active.day===S.day&&S.active.mode==='session')){S.active={day:S.day,mode:'session',exIndex,entries:{}}}
+ if(!(S.active&&S.active.day===S.day&&S.active.mode==='session')){S.active={day:S.day,mode:'session',exIndex,entries:{},startedAt:Date.now()}}
  else S.active.exIndex=exIndex;
  save();
  rd_renderSession();
@@ -376,7 +376,7 @@ function rd_renderSession(){
  h+=`<div style="margin-bottom:16px"><span class="rd-tag selected">${esc(ex[3])}</span></div>`;
  if(lastSet)h+=`<div class="rd-session-last">Last time: ${esc(lastSet.w)}kg × ${esc(lastSet.r)} × ${last.sets.length}</div>`;
  if(!logs.length)h+='<div class="rd-session-empty">Nothing logged yet. Start with one set.</div>';
- logs.forEach((l,i)=>{h+=`<div class="rd-set-row rd-fade"><span class="idx">${i+1}</span><span class="vals">${esc(l.w)} kg × ${esc(l.r)}</span>${l.pr?'<span class="rd-badge rd-badge-success">PR</span>':''}<button class="rd-iconbtn sm" data-del-set="${i}" aria-label="Delete set ${i+1}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`});
+ logs.forEach((l,i)=>{h+=`<div class="rd-set-row rd-fade" data-edit-set="${i}"><span class="idx">${i+1}</span><span class="vals">${esc(l.w)} kg × ${esc(l.r)}</span>${l.pr?'<span class="rd-badge rd-badge-success">PR</span>':''}<button class="rd-iconbtn sm" data-del-set="${i}" aria-label="Delete set ${i+1}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`});
  h+='<div style="height:16px"></div></div>';
  h+=`<div class="rd-session-bottom"><div class="rd-stepper-row">
   <div class="rd-stepper"><span class="lbl">Weight</span><div class="rd-stepper-ctrl"><button data-step="w-" aria-label="Decrease weight">−</button><span class="rd-stepper-val" id="rdStepWVal">${step.w} kg</span><button data-step="w+" aria-label="Increase weight">+</button></div></div>
@@ -405,7 +405,9 @@ function rd_renderSession(){
   rd_toast(`Set logged — ${step.w}kg × ${step.r}`);
   rd_renderSession();
  };
- document.querySelectorAll('[data-del-set]').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('[data-edit-set]').forEach(row=>row.onclick=()=>rd_openSetEditor(exIndex,+row.dataset.editSet));
+ document.querySelectorAll('[data-del-set]').forEach(b=>b.onclick=(e)=>{
+  e.stopPropagation();
   const i=+b.dataset.delSet;
   entries[exIndex].sets.splice(i,1);
   save();
@@ -415,6 +417,20 @@ function rd_renderSession(){
  document.getElementById('rdAdvance').onclick=()=>{
   if(exIndex>=day[2].length-1){rd_finishSession();return}
   S.active.exIndex=exIndex+1;save();rd_renderSession();
+ };
+}
+function rd_openSetEditor(exIndex,setIndex){
+ const entries=rd_sessionEntries();
+ const set=entries[exIndex]?.sets?.[setIndex];if(!set)return;
+ const exName=activeDays()[S.day][2][exIndex][0];
+ rd_openDialog(`<div class="rd-dialog-title">Edit set ${setIndex+1}</div><div style="display:flex;gap:12px;margin-bottom:16px"><div class="rd-field" style="flex:1"><label>Weight kg</label><input class="rd-input" id="rdSetW" type="number" inputmode="decimal" value="${esc(set.w)}"></div><div class="rd-field" style="flex:1"><label>Reps</label><input class="rd-input" id="rdSetR" type="number" inputmode="numeric" value="${esc(set.r)}"></div></div><div class="rd-dialog-footer"><button class="rd-btn danger-txt outline sm" id="rdSetDelete" style="margin-right:auto">Delete</button><button class="rd-btn ghost sm" id="rdSetCancel">Cancel</button><button class="rd-btn primary sm" id="rdSetSave">Save</button></div>`);
+ document.getElementById('rdSetCancel').onclick=rd_closeDialog;
+ document.getElementById('rdSetDelete').onclick=()=>{entries[exIndex].sets.splice(setIndex,1);save();rd_closeDialog();rd_toast('Set removed');rd_renderSession()};
+ document.getElementById('rdSetSave').onclick=()=>{
+  const w=parseFloat(document.getElementById('rdSetW').value)||0;
+  const r=parseInt(document.getElementById('rdSetR').value)||0;
+  set.w=w;set.r=r;set.pr=w>0&&w>rd_bestWeight(exName);
+  save();rd_closeDialog();rd_toast('Set updated');rd_renderSession();
  };
 }
 function rd_openSessionExerciseList(){
@@ -438,14 +454,58 @@ function rd_finishSession(){
  const rows=[];let allSets=[];
  day[2].forEach((ex,i)=>{
   const sets=entries[i]?.sets||[];
-  if(sets.length){rows.push({exercise:ex[0],sets:sets.map(s=>({w:s.w,r:s.r})),summary:sets.map(s=>`${s.w}×${s.r}`).join(', '),pr:sets.some(s=>s.pr)});allSets=allSets.concat(sets)}
+  if(sets.length){rows.push({exercise:ex[0],sets:sets.map(s=>({w:s.w,r:s.r,pr:!!s.pr})),summary:sets.map(s=>`${s.w}×${s.r}`).join(', '),pr:sets.some(s=>s.pr)});allSets=allSets.concat(sets)}
  });
  if(!rows.length){rd_toast('Log at least one set first');return}
  const prCount=allSets.filter(s=>s.pr).length;
  const totalVolume=allSets.reduce((a,s)=>a+(parseFloat(s.w)||0)*(parseFloat(s.r)||0),0);
- S.workouts.push({date:today(),day:day[0],entries:rows,volume:Math.round(totalVolume),prs:new Array(prCount).fill('PR')});
+ const durationMin=S.active?.startedAt?Math.max(1,Math.round((Date.now()-S.active.startedAt)/60000)):null;
+ const workoutRec={date:today(),day:day[0],entries:rows,volume:Math.round(totalVolume),prs:new Array(prCount).fill('PR')};
+ if(durationMin!=null)workoutRec.duration=durationMin;
+ S.workouts.push(workoutRec);
  S.active=null;save();
  rd_ensureSessionEl().classList.add('hidden');
+ rd_showCompletion(workoutRec,day[2].length);
+}
+
+/* ---------- Workout complete (full-screen) ---------- */
+function rd_ensureCompleteEl(){
+ let el=document.getElementById('rdComplete');
+ if(!el){el=document.createElement('div');el.id='rdComplete';el.className='rd-complete hidden';document.body.appendChild(el)}
+ return el;
+}
+function rd_showCompletion(workoutRec,totalExercises){
+ const rows=workoutRec.entries||[];
+ const sets=rows.reduce((a,e)=>a+e.sets.length,0);
+ const prRows=rows.filter(e=>e.pr).map(e=>{
+  const best=e.sets.filter(s=>s.pr).reduce((b,s)=>(parseFloat(s.w)||0)>(parseFloat(b.w)||0)?s:b,e.sets.find(s=>s.pr));
+  return {exercise:e.exercise,w:best.w,r:best.r};
+ });
+ const dayName=esc(workoutRec.day.replace(/^DAY \d+ — /,''));
+ const stats=workoutRec.duration!=null
+  ?[['Duration',`${workoutRec.duration}<small>min</small>`],['Sets',sets],['Volume',`${workoutRec.volume.toLocaleString()}<small>kg</small>`]]
+  :[['Sets',sets],['Volume',`${workoutRec.volume.toLocaleString()}<small>kg</small>`],['Exercises',`${rows.length}<small>/ ${totalExercises}</small>`]];
+ let h='<div class="rd-complete-body">';
+ h+='<div class="rd-complete-mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>';
+ h+=`<div class="rd-eyebrow">Workout complete</div><h1 class="rd-h1" style="margin-bottom:4px">${dayName}</h1>`;
+ h+=`<div style="font-size:13px;color:var(--stone-500);margin-bottom:22px">${rows.length} of ${totalExercises} exercise${totalExercises===1?'':'s'} logged</div>`;
+ h+=`<div class="rd-stat-grid">${stats.map(([lbl,val])=>`<div class="rd-stat-tile"><span class="lbl">${esc(lbl)}</span><span class="val">${val}</span></div>`).join('')}</div>`;
+ if(prRows.length){
+  h+='<div class="rd-eyebrow" style="margin:26px 0 10px">New PR</div>';
+  prRows.forEach(p=>{h+=`<div class="rd-pr-card"><span class="name">${esc(p.exercise)}</span><span class="val">${esc(p.w)}kg × ${esc(p.r)}</span></div>`});
+ }
+ h+='<div class="rd-eyebrow" style="margin:26px 0 2px">Logged</div><div>';
+ rows.forEach(e=>{h+=`<div class="rd-complete-exrow"><span class="name">${esc(e.exercise)}</span><span class="val">${esc(e.summary||'')}</span></div>`});
+ h+='</div>';
+ h+='<div style="height:8px"></div></div>';
+ h+='<div class="rd-complete-bottom"><button class="rd-btn primary lg full" id="rdCompleteDone">Done</button></div>';
+ const el=rd_ensureCompleteEl();
+ el.innerHTML=h;
+ el.classList.remove('hidden');
+ document.getElementById('rdCompleteDone').onclick=rd_closeCompletion;
+}
+function rd_closeCompletion(){
+ rd_ensureCompleteEl().classList.add('hidden');
  rd_toast('Workout saved — nice work');
  rd_today();
 }
